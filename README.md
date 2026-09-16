@@ -1,37 +1,100 @@
-# Tvarita NGO Platform — Frontend
+# Tvarita NGO Platform — Corporate User Journey
 
-A production-quality React frontend for the **Tvarita Arts Collective** NGO platform.
+Production-quality React frontend for the **Tvarita Arts Collective** (Tech for Social Good program).
 
-## Stack
-- **React 18** + JavaScript
-- **Vite** (build tool)
-- **React Router v6** (routing)
-- **Axios** (API client)
-- **Lucide React** (icons)
-- **IDB** (IndexedDB for offline support)
+Visual & editorial reference: [https://tvaritacollective.com/](https://tvaritacollective.com/)
 
-## Setup
+---
+
+## 🏛️ Implemented Corporate User Flow
+
+The complete Corporate journey is implemented end-to-end:
+
+```text
+PUBLIC TVARITA WEBSITE
+        ↓
+DISCOVER (/corporate/experiences)
+        ↓
+EVENT / EXPERIENCE DETAILS (/corporate/experiences/:id)
+        ↓
+CORPORATE SIGNUP (/corporate/signup)
+  (Name, Email, ORG_ID, Company Name)
+        ↓
+EMAIL OTP VERIFICATION (/corporate/verify-otp)
+  (Brevo server-side proxy contract)
+        ↓
+CORPORATE ACCOUNT CREATED & AUTHENTICATED
+        ↓
+CORPORATE DASHBOARD (/corporate/dashboard)
+        ↓
+PREVIEW EXPERIENCES & SELECT EVENT
+        ↓
+EVENT DETAILS & REGISTRATION MODAL
+  (Participants selector, Company details, Notes)
+        ↓
+RAZORPAY PAYMENT (/corporate/payment)
+  (Preparing, Processing, Verification, Success, Cancelled, Failed states)
+        ↓
+PAYMENT VERIFICATION
+  (Authoritative backend check)
+        ↓
+REGISTRATION CONFIRMED (/corporate/confirmation)
+  (Event Name, Date, Time, Location, Company Name, Participants, Amount Paid, Registration ID)
+        ↓
+CONFIRMATION EMAIL
+  ("Confirmation email sent to your registered email address")
+        ↓
+CORPORATE DASHBOARD (/corporate/dashboard)
+  (Upcoming Experience, My Registrations tabs, Payments & Receipts, Quick actions)
+```
+
+---
+
+## 🚀 Routes Overview
+
+| Route | Purpose | Access |
+|---|---|---|
+| `/` | Tvarita Cultural Homepage | Public |
+| `/corporate/experiences` | Curated folk art experiences & workshops catalog | Public |
+| `/corporate/experiences/:id` | Event details, cultural story, and registration | Public |
+| `/corporate/signup` | Corporate signup (Name, Email, ORG_ID, Company Name) | Public |
+| `/corporate/verify-otp` | 6-digit email OTP verification | Public |
+| `/corporate/dashboard` | Corporate portal dashboard | Protected (Corporate) |
+| `/corporate/registrations` | Registration history (Upcoming, Completed, Cancelled) | Protected (Corporate) |
+| `/corporate/registrations/:id` | Registration voucher & printable receipt | Protected (Corporate) |
+| `/corporate/payment` | Razorpay payment & authoritative verification | Protected (Corporate) |
+| `/corporate/confirmation` | Booking confirmation & email dispatch notice | Protected (Corporate) |
+| `/corporate/profile` | Company coordinator profile & verified credentials | Protected (Corporate) |
+| `/corporate/notifications` | Session reminders, booking alerts, and schedule changes | Protected (Corporate) |
+
+---
+
+## 💳 Razorpay & Security
+
+- **Public Key Only**: Frontend exposes only `VITE_RAZORPAY_KEY_ID`.
+- **Backend Secrets**: `RAZORPAY_KEY_SECRET` and `RAZORPAY_WEBHOOK_SECRET` remain strictly on the backend.
+- **Authoritative Confirmation**: Frontend never assumes payment success from the client; it requires server verification.
+
+---
+
+## ✉️ Email OTP Verification (Brevo)
+
+- **Backend-only Brevo Key**: `BREVO_API_KEY` is never exposed to the browser or committed to git.
+- **Frontend Calls**: Proxies through backend `/auth/send-otp` and `/auth/verify-otp`.
+- **Resilience**: Development code `482910` or `123456` provided for offline/test environments.
+
+---
+
+## 🛠️ Quick Start
 
 ```bash
 cd frontend
 cp .env.example .env
-# Fill in your values in .env
 npm install
 npm run dev
 ```
 
-## Environment Variables
-
-See [`frontend/.env.example`](frontend/.env.example) for all required variables.
-
-**Never** put backend secrets in the frontend `.env` files.
-
-## Roles
-- **Public** — cultural website, artist discovery, events, marketplace
-- **NGO Admin** — full platform management + Impact & Funding Manager
-- **Artist** — mobile-first dashboard, bookings, earnings, knowledge
-- **School** — browse programs, book workshops, pay via Razorpay
-- **Corporate** — browse experiences, request customization, pay via Razorpay
-
-## GitHub Workflow
-All features are implemented on `feature-<name>` branches, opened as PRs to `main`.
+Build for production:
+```bash
+npm run build
+```

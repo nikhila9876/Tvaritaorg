@@ -84,7 +84,13 @@ export const payments = {
   status: (orderId) => apiClient.get(`/payments/status/${orderId}`),
 };
 
-/* ─── Knowledge ──────────────────────────────────────────────────── */
+/* ─── Knowledge & AI (Ask Tvarita RAG) ────────────────────────── */
+export const ai = {
+  ask: (question) => apiClient.post('/ai/ask', { question }),
+  suggestedQuestions: () => apiClient.get('/ai/suggested-questions'),
+  knowledge: (params) => apiClient.get('/ai/knowledge', { params }),
+};
+
 export const knowledge = {
   list: (params) => apiClient.get('/knowledge', { params }),
   get: (id) => apiClient.get(`/knowledge/${id}`),

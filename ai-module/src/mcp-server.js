@@ -13,10 +13,12 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 
-import { config, validateConfig } from './config.js';
+import { validateConfig } from './config.js';
 import { discoveryTools, handleDiscoveryToolCall } from './tools/discovery.js';
 import { authTools, handleAuthToolCall } from './tools/auth.js';
 import { bookingTools, handleBookingToolCall } from './tools/booking.js';
+import { logToolCall, logToolResult } from './logger.js';
+import { summarizeMcpResult } from './mcp-result.js';
 
 // Validate env vars before starting
 validateConfig();
@@ -47,22 +49,32 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 // Handle tool execution
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
+  logToolCall(name, args);
 
   let result = null;
 
-  // Route to the appropriate handler
-  if (discoveryTools.some((t) => t.name === name)) {
-    result = await handleDiscoveryToolCall(name, args);
-  } else if (authTools.some((t) => t.name === name)) {
-    result = await handleAuthToolCall(name, args);
-  } else if (bookingTools.some((t) => t.name === name)) {
-    result = await handleBookingToolCall(name, args);
+  try {
+    if (discoveryTools.some((t) => t.name === name)) {
+      result = await handleDiscoveryToolCall(name, args);
+    } else if (authTools.some((t) => t.name === name)) {
+      result = await handleAuthToolCall(name, args);
+    } else if (bookingTools.some((t) => t.name === name)) {
+      result = await handleBookingToolCall(name, args);
+    }
+  } catch (err) {
+    logToolResult(name, {
+      ok: false,
+      error: err?.message || 'Unhandled tool exception',
+    });
+    throw err;
   }
 
   if (result) {
+    logToolResult(name, summarizeMcpResult(result));
     return result;
   }
 
+  logToolResult(name, { ok: false, error: `Tool not found: ${name}` });
   throw new Error(`Tool not found: ${name}`);
 });
 

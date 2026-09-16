@@ -191,7 +191,7 @@ function HeroSection() {
               Explore Art Forms
               <ArrowRight size={18} />
             </Link>
-            <Link to="/experiences" className="btn btn-lg" style={{ background: 'transparent', border: '2px solid rgba(255,255,255,0.5)', color: '#fff' }}>
+            <Link to="/corporate/experiences" className="btn btn-lg" style={{ background: 'transparent', border: '2px solid rgba(255,255,255,0.5)', color: '#fff' }}>
               <Play size={18} />
               Explore Experiences
             </Link>
@@ -270,10 +270,11 @@ function OfferingsSection() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
           {OFFERINGS.map(({ icon: Icon, color, bg, title, desc }) => (
-            <div
+            <Link
               key={title}
+              to="/corporate/experiences"
               className="card"
-              style={{ padding: '1.5rem', cursor: 'pointer', transition: 'all var(--transition-base)' }}
+              style={{ padding: '1.5rem', cursor: 'pointer', transition: 'all var(--transition-base)', textDecoration: 'none', color: 'inherit' }}
               onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = 'var(--shadow-lg)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}
             >
@@ -286,7 +287,7 @@ function OfferingsSection() {
               </div>
               <h3 style={{ fontWeight: 700, fontSize: 'var(--text-base)', marginBottom: '0.5rem', lineHeight: 1.3 }}>{title}</h3>
               <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted)', lineHeight: 1.6 }}>{desc}</p>
-            </div>
+            </Link>
           ))}
         </div>
       </div>

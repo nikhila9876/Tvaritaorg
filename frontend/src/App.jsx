@@ -1,122 +1,106 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { CartProvider } from './context/CartContext';
+import { ToastProvider } from './context/ToastContext';
+import { ProtectedRoute, RoleGuard } from './components/auth/ProtectedRoute';
 
-function App() {
-  const [count, setCount] = useState(0)
+// Public Pages
+import HomePage from './pages/public/HomePage';
 
+// Corporate Pages
+import CorporateExperiencesPage from './pages/corporate/CorporateExperiencesPage';
+import CorporateExperienceDetailPage from './pages/corporate/CorporateExperienceDetailPage';
+import CorporateSignupPage from './pages/corporate/CorporateSignupPage';
+import CorporateVerifyOtpPage from './pages/corporate/CorporateVerifyOtpPage';
+import CorporateDashboardPage from './pages/corporate/CorporateDashboardPage';
+import CorporateRegistrationsPage from './pages/corporate/CorporateRegistrationsPage';
+import CorporateRegistrationDetailPage from './pages/corporate/CorporateRegistrationDetailPage';
+import CorporateProfilePage from './pages/corporate/CorporateProfilePage';
+import CorporateNotificationsPage from './pages/corporate/CorporateNotificationsPage';
+import CorporatePaymentPage from './pages/corporate/CorporatePaymentPage';
+import CorporateConfirmationPage from './pages/corporate/CorporateConfirmationPage';
+
+export default function App() {
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <AuthProvider>
+      <CartProvider>
+        <ToastProvider>
+          <BrowserRouter>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<HomePage />} />
+              <Route path="/home" element={<Navigate to="/" replace />} />
 
-      <div className="ticks"></div>
+              {/* Corporate User Journey Routes */}
+              <Route path="/corporate/experiences" element={<CorporateExperiencesPage />} />
+              <Route path="/corporate/experiences/:id" element={<CorporateExperienceDetailPage />} />
+              <Route path="/corporate/signup" element={<CorporateSignupPage />} />
+              <Route path="/corporate/verify-otp" element={<CorporateVerifyOtpPage />} />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+              {/* Protected Corporate Flow Routes */}
+              <Route
+                path="/corporate/dashboard"
+                element={
+                  <RoleGuard roles={['corporate', 'admin']} redirectTo="/corporate/signup">
+                    <CorporateDashboardPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/corporate/registrations"
+                element={
+                  <RoleGuard roles={['corporate', 'admin']} redirectTo="/corporate/signup">
+                    <CorporateRegistrationsPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/corporate/registrations/:id"
+                element={
+                  <RoleGuard roles={['corporate', 'admin']} redirectTo="/corporate/signup">
+                    <CorporateRegistrationDetailPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/corporate/payment"
+                element={
+                  <RoleGuard roles={['corporate', 'admin']} redirectTo="/corporate/signup">
+                    <CorporatePaymentPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/corporate/confirmation"
+                element={
+                  <RoleGuard roles={['corporate', 'admin']} redirectTo="/corporate/signup">
+                    <CorporateConfirmationPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/corporate/profile"
+                element={
+                  <RoleGuard roles={['corporate', 'admin']} redirectTo="/corporate/signup">
+                    <CorporateProfilePage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/corporate/notifications"
+                element={
+                  <RoleGuard roles={['corporate', 'admin']} redirectTo="/corporate/signup">
+                    <CorporateNotificationsPage />
+                  </RoleGuard>
+                }
+              />
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+              {/* Catch-all */}
+              <Route path="*" element={<Navigate to="/corporate/experiences" replace />} />
+            </Routes>
+          </BrowserRouter>
+        </ToastProvider>
+      </CartProvider>
+    </AuthProvider>
+  );
 }
-
-export default App

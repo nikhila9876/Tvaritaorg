@@ -7,6 +7,7 @@ import artistRoutes from './routes/artist.js';
 import feedbackRoutes, { publicArtistFeedbackRouter } from './routes/feedback.js';
 import internalRoutes from './routes/internal.js';
 import aiRoutes from './routes/ai.js';
+import communityRoutes from './routes/community.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 
 export function createApp() {
@@ -26,6 +27,7 @@ export function createApp() {
   app.use('/api/feedback', feedbackRoutes);
   app.use('/api/artists', publicArtistFeedbackRouter);
   app.use('/api/ai', aiRoutes);
+  app.use('/api/community', communityRoutes);
   app.use('/internal', internalRoutes);
 
   app.use(notFoundHandler);

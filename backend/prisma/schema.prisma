@@ -224,3 +224,78 @@ model KnowledgeDocument {
   @@index([region])
 }
 
+model CommunityPost {
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId
+  authorId     String
+  authorName   String
+  authorEmail  String?
+  authorRole   String      @default("participant") // artist, participant, corporate, admin
+  authorAvatar String?
+  title        String?
+  content      String
+  mediaUrls    String[]
+  artForm      String?
+  category     String      @default("experience") // artwork, experience, workshop, story, tradition
+  location     String?
+  likeCount    Int         @default(0)
+  commentCount Int         @default(0)
+  status       String      @default("active") // active, hidden, flagged
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  comments     Comment[]
+  likes        PostLike[]
+  reports      Report[]
+
+  @@index([status, createdAt])
+  @@index([category])
+  @@index([artForm])
+}
+
+model Comment {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  postId       String        @db.ObjectId
+  authorId     String
+  authorName   String
+  authorEmail  String?
+  authorRole   String        @default("participant")
+  authorAvatar String?
+  content      String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  post         CommunityPost @relation(fields: [postId], references: [id])
+
+  @@index([postId, createdAt])
+}
+
+model PostLike {
+  id        String        @id @default(auto()) @map("_id") @db.ObjectId
+  postId    String        @db.ObjectId
+  userId    String
+  createdAt DateTime      @default(now())
+
+  post      CommunityPost @relation(fields: [postId], references: [id])
+
+  @@unique([postId, userId])
+  @@index([postId])
+}
+
+model Report {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  postId        String        @db.ObjectId
+  reporterId    String?
+  reporterEmail String?
+  reason        String
+  details       String?
+  status        String        @default("pending") // pending, reviewed, dismissed, actioned
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  post          CommunityPost @relation(fields: [postId], references: [id])
+
+  @@index([postId])
+  @@index([status, createdAt])
+}
+
+

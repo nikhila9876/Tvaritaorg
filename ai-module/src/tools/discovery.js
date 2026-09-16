@@ -6,6 +6,7 @@
  */
 
 import { apiGet } from '../api-client.js';
+import { mcpOk, mcpError, mcpFromCaught } from '../mcp-result.js';
 
 export const discoveryTools = [
   {
@@ -23,7 +24,12 @@ export const discoveryTools = [
     inputSchema: {
       type: 'object',
       properties: {
-        state_id: { type: 'string', description: 'The ID of the state (e.g., Karnataka)' },
+        state_id: {
+          type: 'string',
+          description:
+            'The state id returned by get_states (the `id` field). ' +
+            'This is a Mongo ObjectId, not the state name (e.g. pass the id, not "Karnataka").',
+        },
       },
       required: ['state_id'],
     },
@@ -70,42 +76,44 @@ export const discoveryTools = [
  * @returns {Promise<{ content: { type: string, text: string }[], isError?: boolean } | null>}
  */
 export async function handleDiscoveryToolCall(name, args) {
-  let result;
   try {
+    let result;
     switch (name) {
       case 'get_states':
         result = await apiGet('/states');
         break;
       case 'get_events_by_state':
+        if (!args?.state_id) {
+          return mcpError('state_id is required. Call get_states first and use the `id` field.', {
+            code: 'VALIDATION_ERROR',
+          });
+        }
         result = await apiGet(`/states/${args.state_id}/events`);
         break;
       case 'get_event_detail':
+        if (!args?.event_id) {
+          return mcpError('event_id is required.', { code: 'VALIDATION_ERROR' });
+        }
         result = await apiGet(`/events/${args.event_id}`);
         break;
       case 'get_event_artists':
+        if (!args?.event_id) {
+          return mcpError('event_id is required.', { code: 'VALIDATION_ERROR' });
+        }
         result = await apiGet(`/events/${args.event_id}/artists`);
         break;
       case 'get_artist_timeslots':
+        if (!args?.artist_id) {
+          return mcpError('artist_id is required.', { code: 'VALIDATION_ERROR' });
+        }
         result = await apiGet(`/artists/${args.artist_id}/timeslots`);
         break;
       default:
         return null; // Not a discovery tool
     }
 
-    return {
-      content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-    };
+    return mcpOk(result);
   } catch (error) {
-    // Format error for MCP
-    return {
-      content: [{ 
-        type: 'text', 
-        text: JSON.stringify({ 
-          error: error.error || error.message || 'Unknown error', 
-          status: error.status || 0 
-        }, null, 2) 
-      }],
-      isError: true,
-    };
+    return mcpFromCaught(error);
   }
 }

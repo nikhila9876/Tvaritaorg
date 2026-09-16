@@ -29,6 +29,19 @@
 
 import { apiPost } from '../api-client.js';
 import { sessionStore, DEFAULT_CONVERSATION_ID } from '../session-store.js';
+import { mcpOk, mcpError, mcpFromCaught } from '../mcp-result.js';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function invalidEmailError(email) {
+  if (!email || typeof email !== 'string' || !EMAIL_RE.test(email.trim())) {
+    return mcpError(
+      'A valid email address is required. Ask the guest for their email and retry.',
+      { code: 'VALIDATION_ERROR', field: 'email' },
+    );
+  }
+  return null;
+}
 
 export const authTools = [
   {
@@ -84,57 +97,70 @@ export async function handleAuthToolCall(name, args) {
   try {
     switch (name) {
       case 'request_otp': {
-        // POST /api/auth/guest/otp/request
-        const body = { email: args.email };
+        const invalid = invalidEmailError(args?.email);
+        if (invalid) return invalid;
+
+        const body = { email: args.email.trim() };
         if (args.name) body.name = args.name;
 
         const result = await apiPost('/auth/guest/otp/request', body);
-        return {
-          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-        };
+        return mcpOk(result);
       }
 
       case 'verify_otp': {
-        // POST /api/auth/guest/otp/verify
-        const result = await apiPost('/auth/guest/otp/verify', {
-          email: args.email,
-          otp: args.otp,
-        });
+        const invalid = invalidEmailError(args?.email);
+        if (invalid) return invalid;
 
-        // Store the session token for subsequent authenticated calls
-        if (result.token) {
-          sessionStore.setSession(
-            DEFAULT_CONVERSATION_ID,
-            result.token,
-            args.email,
+        const otp = args?.otp != null ? String(args.otp).trim() : '';
+        if (!otp || otp.length < 4 || otp.length > 8) {
+          return mcpError(
+            'A valid OTP code is required (4–8 characters). Ask the guest to re-enter the code, or call request_otp again to send a new one.',
+            { code: 'VALIDATION_ERROR', field: 'otp', retryable: true },
           );
         }
 
-        // Return guest info to the LLM (but not the raw token — it doesn't need it)
-        const safeResult = {
+        const result = await apiPost('/auth/guest/otp/verify', {
+          email: args.email.trim(),
+          otp,
+        });
+
+        if (!result?.token) {
+          return mcpError(
+            'OTP verify succeeded but the backend did not return a session token. The guest is NOT authenticated — do not proceed to booking.',
+            { code: 'AUTH_INCOMPLETE', authenticated: false },
+          );
+        }
+
+        sessionStore.setSession(
+          DEFAULT_CONVERSATION_ID,
+          result.token,
+          (result.guest?.email || args.email).trim(),
+        );
+
+        return mcpOk({
           authenticated: true,
           guest: result.guest,
           message: 'Guest authenticated successfully. You can now proceed with booking.',
-        };
-
-        return {
-          content: [{ type: 'text', text: JSON.stringify(safeResult, null, 2) }],
-        };
+        });
       }
 
       default:
         return null; // Not an auth tool
     }
   } catch (error) {
-    return {
-      content: [{
-        type: 'text',
-        text: JSON.stringify({
-          error: error.error || error.message || 'Unknown error',
-          status: error.status || 0,
-        }, null, 2),
-      }],
-      isError: true,
-    };
+    const status = error?.status;
+    const extra = {};
+    if (status === 401 || (typeof error?.error === 'string' && /otp/i.test(error.error))) {
+      extra.code = 'OTP_INVALID';
+      extra.retryable = true;
+      extra.message_for_user =
+        'That OTP was not accepted. Ask the guest to try again with the same code, or call request_otp to send a new one. They can retry in this conversation.';
+    }
+    const result = mcpFromCaught(error);
+    if (extra.code) {
+      const parsed = JSON.parse(result.content[0].text);
+      return mcpError(parsed.error, { ...parsed, ...extra });
+    }
+    return result;
   }
 }

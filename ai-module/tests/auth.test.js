@@ -121,6 +121,8 @@ describe('authTools', () => {
     const errContent = JSON.parse(result.content[0].text);
     expect(errContent.error).toBe('Invalid OTP');
     expect(errContent.status).toBe(401);
+    expect(errContent.code).toBe('OTP_INVALID');
+    expect(errContent.retryable).toBe(true);
 
     // Session store should NOT be populated on failure
     expect(sessionStore.hasSession(DEFAULT_CONVERSATION_ID)).toBe(false);
@@ -129,5 +131,55 @@ describe('authTools', () => {
   test('returns null for unknown tool names', async () => {
     const result = await handleAuthToolCall('unknown_tool', {});
     expect(result).toBeNull();
+  });
+
+  test('request_otp rejects missing/invalid email without hitting the API', async () => {
+    const result = await handleAuthToolCall('request_otp', { email: 'not-an-email' });
+    expect(result.isError).toBe(true);
+    expect(apiPost).not.toHaveBeenCalled();
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.code).toBe('VALIDATION_ERROR');
+  });
+
+  test('verify_otp does not claim authenticated when backend omits token', async () => {
+    apiPost.mockResolvedValueOnce({
+      guest: { id: 'guest_1', email: 'guest@example.com' },
+    });
+
+    const result = await handleAuthToolCall('verify_otp', {
+      email: 'guest@example.com',
+      otp: '482910',
+    });
+
+    expect(result.isError).toBe(true);
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.authenticated).toBe(false);
+    expect(parsed.code).toBe('AUTH_INCOMPLETE');
+    expect(sessionStore.hasSession(DEFAULT_CONVERSATION_ID)).toBe(false);
+  });
+
+  test('verify_otp can be retried after a failed attempt in the same session', async () => {
+    apiPost.mockRejectedValueOnce({
+      error: 'Invalid OTP',
+      status: 401,
+    });
+    apiPost.mockResolvedValueOnce({
+      token: 'jwt-after-retry',
+      guest: { id: 'guest_123', email: 'guest@example.com', name: 'Priya' },
+    });
+
+    const fail = await handleAuthToolCall('verify_otp', {
+      email: 'guest@example.com',
+      otp: '000000',
+    });
+    expect(fail.isError).toBe(true);
+    expect(sessionStore.hasSession(DEFAULT_CONVERSATION_ID)).toBe(false);
+
+    const ok = await handleAuthToolCall('verify_otp', {
+      email: 'guest@example.com',
+      otp: '482910',
+    });
+    expect(ok.isError).toBeUndefined();
+    expect(sessionStore.getToken(DEFAULT_CONVERSATION_ID)).toBe('jwt-after-retry');
   });
 });

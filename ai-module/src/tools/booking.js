@@ -26,6 +26,7 @@
 
 import { apiPost } from '../api-client.js';
 import { sessionStore, DEFAULT_CONVERSATION_ID } from '../session-store.js';
+import { mcpOk, mcpError, mcpFromCaught } from '../mcp-result.js';
 
 export const bookingTools = [
   {
@@ -64,6 +65,42 @@ export const bookingTools = [
 ];
 
 /**
+ * Cheap arg checks so we never hit the API with obviously bad booking payloads.
+ * @returns {ReturnType<typeof mcpError> | null}
+ */
+export function validateBookingArgs(args = {}) {
+  const details = [];
+
+  if (!args.artist_id || typeof args.artist_id !== 'string' || !args.artist_id.trim()) {
+    details.push({ field: 'artist_id', message: 'artist_id is required' });
+  }
+  if (!args.slot_id || typeof args.slot_id !== 'string' || !args.slot_id.trim()) {
+    details.push({ field: 'slot_id', message: 'slot_id is required' });
+  }
+
+  if (args.headcount !== undefined && args.headcount !== null && args.headcount !== '') {
+    const n = Number(args.headcount);
+    if (!Number.isInteger(n) || n < 1 || n > 50) {
+      details.push({
+        field: 'headcount',
+        message: 'headcount must be an integer between 1 and 50 (got ' + String(args.headcount) + ')',
+      });
+    }
+  }
+
+  if (args.guest_name != null && typeof args.guest_name === 'string' && args.guest_name.length > 200) {
+    details.push({ field: 'guest_name', message: 'guest_name must be at most 200 characters' });
+  }
+
+  if (details.length === 0) return null;
+
+  return mcpError(
+    'Booking arguments are invalid. Fix the fields below before retrying create_individual_booking.',
+    { code: 'VALIDATION_ERROR', details },
+  );
+}
+
+/**
  * Executes the booking tool call and returns the formatted result for MCP.
  * @param {string} name
  * @param {Object} args
@@ -72,25 +109,28 @@ export const bookingTools = [
 export async function handleBookingToolCall(name, args) {
   if (name !== 'create_individual_booking') return null;
 
+  const validationError = validateBookingArgs(args);
+  if (validationError) return validationError;
+
   // Check session — guest must be authenticated
   if (!sessionStore.hasSession(DEFAULT_CONVERSATION_ID)) {
-    return {
-      content: [{
-        type: 'text',
-        text: JSON.stringify({
-          error: 'Guest is not authenticated. Please call request_otp and verify_otp first.',
-          requires_auth: true,
-        }, null, 2),
-      }],
-      isError: true,
-    };
+    return mcpError(
+      'Guest is not authenticated. Please call request_otp and verify_otp first, then retry this booking.',
+      { code: 'NOT_AUTHENTICATED', requires_auth: true },
+    );
   }
 
   const token = sessionStore.getToken(DEFAULT_CONVERSATION_ID);
   const guestEmail = sessionStore.getEmail(DEFAULT_CONVERSATION_ID);
 
+  if (!token || !guestEmail) {
+    return mcpError(
+      'Guest is not authenticated. Please call request_otp and verify_otp first, then retry this booking.',
+      { code: 'NOT_AUTHENTICATED', requires_auth: true },
+    );
+  }
+
   try {
-    // Build payload matching individualBookingSchema
     const body = {
       artist_id: args.artist_id,
       slot_id: args.slot_id,
@@ -101,29 +141,29 @@ export async function handleBookingToolCall(name, args) {
       body.guest_name = args.guest_name;
     }
 
-    if (args.headcount) {
-      body.headcount = args.headcount;
+    if (args.headcount !== undefined && args.headcount !== null && args.headcount !== '') {
+      body.headcount = Number(args.headcount);
     }
 
-    // POST /api/bookings/individual
-    // Send both guest_email in body (required by schema) and token as header (forward compat)
     const result = await apiPost('/bookings/individual', body, {
       authToken: token,
     });
 
-    return {
-      content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-    };
+    return mcpOk(result);
   } catch (error) {
-    return {
-      content: [{
-        type: 'text',
-        text: JSON.stringify({
-          error: error.error || error.message || 'Unknown error',
-          status: error.status || 0,
-        }, null, 2),
-      }],
-      isError: true,
-    };
+    const caught = mcpFromCaught(error);
+    if (error?.status === 409) {
+      const parsed = JSON.parse(caught.content[0].text);
+      return mcpError(
+        parsed.error || 'That timeslot is no longer available.',
+        {
+          ...parsed,
+          code: 'SLOT_UNAVAILABLE',
+          message_for_user:
+            'This timeslot was taken. Call get_artist_timeslots again and ask the guest to pick another slot.',
+        },
+      );
+    }
+    return caught;
   }
 }

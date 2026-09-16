@@ -1,13 +1,17 @@
 // Person B schema — artists, admin, feedback, schools, corporates, timeslots, payouts.
 // Bookings/Events are shared: Person A owns writes; Person B reads for admin/artist views.
-// Production: change provider to "postgresql" and set DATABASE_URL accordingly.
+//
+// MongoDB note: Prisma does not enforce referential actions (onDelete/onUpdate).
+// Application-level cascades live in src/services/cascadeService.js — Person A must
+// use the same pattern for Event/Booking deletes and any atomic slot-lock on
+// artist_id + slot_id (requires a replica set for Prisma transactions).
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
@@ -35,7 +39,7 @@ enum BookingStatus {
 }
 
 model Admin {
-  id           String   @id @default(cuid())
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
   email        String   @unique
   passwordHash String
   name         String?
@@ -44,7 +48,7 @@ model Admin {
 }
 
 model Artist {
-  id            String     @id @default(cuid())
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
   email         String     @unique
   passwordHash  String
   name          String
@@ -67,20 +71,20 @@ model Artist {
 }
 
 model PasswordToken {
-  id        String   @id @default(cuid())
-  artistId  String
-  tokenHash String   @unique
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  artistId  String    @db.ObjectId
+  tokenHash String    @unique
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
-  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  artist Artist @relation(fields: [artistId], references: [id])
 
   @@index([artistId])
 }
 
 model School {
-  id        String   @id @default(cuid())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   email     String   @unique
   name      String
   phone     String?
@@ -91,7 +95,7 @@ model School {
 }
 
 model Corporate {
-  id          String   @id @default(cuid())
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   email       String   @unique
   name        String
   orgId       String?
@@ -102,8 +106,8 @@ model Corporate {
 }
 
 model TimeSlot {
-  id        String   @id @default(cuid())
-  artistId  String
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  artistId  String   @db.ObjectId
   date      String
   startTime String
   endTime   String
@@ -111,16 +115,16 @@ model TimeSlot {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  artist Artist @relation(fields: [artistId], references: [id])
 
   @@unique([artistId, date, startTime, endTime])
   @@index([artistId, date])
 }
 
 model Feedback {
-  id         String         @id @default(cuid())
-  artistId   String
-  eventId    String
+  id         String         @id @default(auto()) @map("_id") @db.ObjectId
+  artistId   String         @db.ObjectId
+  eventId    String         @db.ObjectId
   guestEmail String
   guestName  String?
   rating     Int
@@ -130,7 +134,7 @@ model Feedback {
   updatedAt  DateTime       @updatedAt
   reviewedAt DateTime?
 
-  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  artist Artist @relation(fields: [artistId], references: [id])
 
   @@unique([guestEmail, eventId])
   @@index([artistId, status])
@@ -139,7 +143,7 @@ model Feedback {
 
 /// Shared with Person A (Person A writes; Person B reads).
 model Event {
-  id        String   @id @default(cuid())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   title     String
   artForm   String?
   date      String
@@ -155,30 +159,30 @@ model Event {
 
 /// Shared with Person A (Person A writes booking state; Person B may assign artist).
 model Booking {
-  id             String        @id @default(cuid())
-  eventId        String
-  artistId       String?
-  guestEmail     String?
-  guestName      String?
-  organization   String?
-  bookingType    String?
-  status         BookingStatus @default(pending)
-  grossAmount    Float         @default(0)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  eventId      String        @db.ObjectId
+  artistId     String?       @db.ObjectId
+  guestEmail   String?
+  guestName    String?
+  organization String?
+  bookingType  String?
+  status       BookingStatus @default(pending)
+  grossAmount  Float         @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
-  event  Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  artist Artist? @relation(fields: [artistId], references: [id], onDelete: SetNull)
+  event  Event   @relation(fields: [eventId], references: [id])
+  artist Artist? @relation(fields: [artistId], references: [id])
 
   @@index([artistId])
   @@index([eventId])
 }
 
 model Payout {
-  id          String       @id @default(cuid())
-  artistId    String
-  eventId     String
-  bookingId   String?
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  artistId    String       @db.ObjectId
+  eventId     String       @db.ObjectId
+  bookingId   String?      @db.ObjectId
   grossAmount Float
   artistShare Float
   status      PayoutStatus @default(pending)
@@ -186,14 +190,14 @@ model Payout {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
-  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  artist Artist @relation(fields: [artistId], references: [id])
+  event  Event  @relation(fields: [eventId], references: [id])
 
   @@index([artistId, status])
 }
 
 model NotificationLog {
-  id        String   @id @default(cuid())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   channel   String
   to        String
   template  String

@@ -6,6 +6,7 @@ import { ProtectedRoute, RoleGuard } from './components/auth/ProtectedRoute';
 
 // Public Pages
 import HomePage from './pages/public/HomePage';
+import AskTvaritaPage from './pages/public/AskTvaritaPage';
 
 // Corporate Pages
 import CorporateExperiencesPage from './pages/corporate/CorporateExperiencesPage';
@@ -30,6 +31,7 @@ export default function App() {
               {/* Public Routes */}
               <Route path="/" element={<HomePage />} />
               <Route path="/home" element={<Navigate to="/" replace />} />
+              <Route path="/ask-tvarita" element={<AskTvaritaPage />} />
 
               {/* Corporate User Journey Routes */}
               <Route path="/corporate/experiences" element={<CorporateExperiencesPage />} />

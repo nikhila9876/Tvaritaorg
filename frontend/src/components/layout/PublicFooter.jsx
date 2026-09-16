@@ -3,6 +3,7 @@ import { Mail, Phone, MapPin, Globe, Share2, Heart, ExternalLink } from 'lucide-
 
 const FOOTER_LINKS = {
   'Platform': [
+    { label: 'Ask Tvarita (Cultural AI)', to: '/ask-tvarita' },
     { label: 'Corporate Experiences', to: '/corporate/experiences' },
     { label: 'Traditional Workshops', to: '/corporate/experiences' },
     { label: 'Folk Performances', to: '/corporate/experiences' },

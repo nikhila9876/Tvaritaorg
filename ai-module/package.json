@@ -1,0 +1,31 @@
+{
+  "name": "tvarita-ai-module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI/chatbot layer for Tvarita Arts Platform — MCP server + conversational agent for guest discovery and booking",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node src/chatbot.js",
+    "mcp": "node src/mcp-server.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --forceExit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "dotenv": "^17.2.2",
+    "openai": "^5.8.2",
+    "zod": "^3.25.67"
+  },
+  "devDependencies": {
+    "jest": "^30.1.3"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "transform": {},
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ]
+  }
+}

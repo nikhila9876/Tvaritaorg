@@ -23,6 +23,18 @@
 - **No DB-level cascades.** Use `deleteArtistWithCascade` / `deleteEventWithCascade` in `src/services/cascadeService.js`.
 - Atomic slot-lock on `artist_id + slot_id` must run inside a Prisma transaction against a **replica set**.
 
+### Person A confirmed contract notes (2026-09)
+
+| Need | Person B current shape | Action |
+|------|------------------------|--------|
+| Sort by rating desc | Implemented (`rating_avg` desc) | OK — Person A re-asserts sort client-side |
+| `available_slots` in response | **Not present** | Person A uses `TimeSlot` directly for Individual; School/Corporate assign without slot pick |
+| Field names | `id`, `name`, `rating_avg`, `art_form` | Person A uses these (not `artist_id` in list items — `id` is the artist id) |
+| Booking statuses | Extended with `hold`, `awaiting_payment`, `no_artist_available_pending_admin` | **Shared schema change — Person B must review** |
+| `Booking.eventId` | Now **optional** (pending-admin has no Event) | **Shared schema change — Person B must review** |
+| Manual assign without Event | `POST /api/admin/bookings/{booking_id}/assign-artist` | New admin route; opens 48h payment window |
+| Deletes | Same cascade helpers | Person A extends cascade for `Payment` + `ArtistDateHold` |
+
 ## 1. `GET /internal/artists/available`
 
 Used by Person A's Corporate/School auto-assignment.

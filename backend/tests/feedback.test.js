@@ -19,13 +19,24 @@ async function seedArtist() {
   });
 }
 
+async function seedEvent(title = 'Test Event') {
+  return prisma.event.create({
+    data: {
+      title,
+      artForm: 'Madhubani',
+      date: '2026-10-01',
+    },
+  });
+}
+
 describe('Feedback rate-limit and auto-approve', () => {
   test('allows only one feedback per (guest_email, event_id)', async () => {
     const artist = await seedArtist();
+    const event = await seedEvent('Rate limit event');
 
     const payload = {
       artist_id: artist.id,
-      event_id: 'evt-100',
+      event_id: event.id,
       guest_email: 'guest@example.com',
       guest_name: 'Guest',
       rating: 5,
@@ -40,18 +51,20 @@ describe('Feedback rate-limit and auto-approve', () => {
     expect(second.status).toBe(409);
 
     const count = await prisma.feedback.count({
-      where: { guestEmail: 'guest@example.com', eventId: 'evt-100' },
+      where: { guestEmail: 'guest@example.com', eventId: event.id },
     });
     expect(count).toBe(1);
   });
 
   test('auto-approves feedback still pending after 72h and updates live rating', async () => {
     const artist = await seedArtist();
+    const oldEvent = await seedEvent('Old event');
+    const newEvent = await seedEvent('New event');
 
     const stale = await prisma.feedback.create({
       data: {
         artistId: artist.id,
-        eventId: 'evt-old',
+        eventId: oldEvent.id,
         guestEmail: 'old@example.com',
         rating: 4,
         status: 'pending',
@@ -62,7 +75,7 @@ describe('Feedback rate-limit and auto-approve', () => {
     const fresh = await prisma.feedback.create({
       data: {
         artistId: artist.id,
-        eventId: 'evt-new',
+        eventId: newEvent.id,
         guestEmail: 'new@example.com',
         rating: 2,
         status: 'pending',

@@ -9,12 +9,19 @@
 |-------|--------|
 | Runtime | Node.js 20+ |
 | Framework | Express 5 |
-| DB | SQLite (local/dev/test); PostgreSQL-ready via Prisma |
+| DB | **MongoDB** via Prisma (replica set required for `$transaction`) |
 | ORM | Prisma |
 | Auth | JWT (Bearer) + bcrypt password hashes |
 | Email | Brevo (`BREVO_API_KEY`); console fallback in dev |
 | CSV | `csv-parse` + multer |
 | Jobs | `node-cron` (hourly feedback auto-approve) |
+
+### Shared schema / ObjectIds (Person A must review before merge)
+
+- All model `id` fields are Mongo `ObjectId` (`@default(auto()) @map("_id") @db.ObjectId`).
+- FK fields (`artistId`, `eventId`, `bookingId`, etc.) are `String @db.ObjectId`.
+- **No DB-level cascades.** Use `deleteArtistWithCascade` / `deleteEventWithCascade` in `src/services/cascadeService.js`.
+- Atomic slot-lock on `artist_id + slot_id` must run inside a Prisma transaction against a **replica set**.
 
 ## 1. `GET /internal/artists/available`
 
@@ -68,7 +75,7 @@ Used by Person A's Corporate/School auto-assignment.
 
 | Field | Notes |
 |-------|-------|
-| `id` | cuid |
+| `id` | Mongo ObjectId |
 | `eventId` | FK → Event |
 | `artistId` | nullable until assigned |
 | `guestEmail`, `guestName`, `organization` | optional |

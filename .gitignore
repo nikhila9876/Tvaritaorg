@@ -16,9 +16,12 @@ frontend/.env.local
 frontend/.env.production
 backend/.env
 
-# Database (local SQLite)
+# Database (legacy local SQLite artifacts)
 backend/prisma/*.db
 backend/prisma/*.db-journal
+
+# Test Mongo URI scratch files
+backend/tests/.mongo-uri
 
 # Editor / OS
 .DS_Store

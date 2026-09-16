@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, Music, Calendar, BookOpen,
   ShoppingBag, BarChart3, Settings, FileText, Globe,
   Briefcase, GraduationCap, Wallet, Camera, BookMarked,
-  Home, Clock, Mic2,
+  Home, Clock, Mic2, Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -43,10 +43,9 @@ const NAV_BY_ROLE = {
   corporate: [
     { label: 'Dashboard', to: '/corporate/dashboard', icon: LayoutDashboard },
     { label: 'Experiences', to: '/corporate/experiences', icon: Briefcase },
-    { label: 'Requests', to: '/corporate/requests', icon: Clock },
-    { label: 'Bookings', to: '/corporate/bookings', icon: BookOpen },
-    { label: 'Payments', to: '/corporate/payments', icon: Wallet },
-    { label: 'Impact', to: '/corporate/impact', icon: BarChart3 },
+    { label: 'My Registrations', to: '/corporate/registrations', icon: BookOpen },
+    { label: 'Notifications', to: '/corporate/notifications', icon: Bell },
+    { label: 'Company Profile', to: '/corporate/profile', icon: User },
   ],
   user: [
     { label: 'Profile', to: '/app/profile', icon: User },
@@ -72,6 +71,9 @@ export default function DashboardShell({ children, role }) {
     corporate: 'Corporate Portal',
     user: 'My Account',
   }[role] || 'Dashboard';
+
+  const notifLink = role === 'corporate' ? '/corporate/notifications' : '/app/notifications';
+  const profileLink = role === 'corporate' ? '/corporate/profile' : '/app/profile';
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--color-bg)' }}>
@@ -111,15 +113,23 @@ export default function DashboardShell({ children, role }) {
               <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <span style={{ color: '#fff', fontWeight: 800, fontSize: '0.875rem', fontFamily: 'var(--font-serif)' }}>T</span>
               </div>
-              <div style={{ fontFamily: 'var(--font-serif)', fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--color-text)' }}>Tvarita</div>
+              <div>
+                <div style={{ fontFamily: 'var(--font-serif)', fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--color-text)', lineHeight: 1 }}>Tvarita</div>
+                <div style={{ fontSize: '0.55rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--color-terracotta)', fontWeight: 600 }}>Arts Collective</div>
+              </div>
             </Link>
             <button className="btn btn-icon btn-ghost" onClick={() => setSidebarOpen(false)}>
               <X size={18} />
             </button>
           </div>
 
-          <div style={{ padding: '0.75rem 0.75rem', borderBottom: '1px solid var(--color-border-light)' }}>
+          <div style={{ padding: '0.75rem 0.75rem', borderBottom: '1px solid var(--color-border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div className="badge badge-green" style={{ fontSize: '0.625rem' }}>{roleLabel}</div>
+            {role === 'corporate' && (
+              <span style={{ fontSize: '0.65rem', color: 'var(--color-muted)', fontFamily: 'var(--font-mono)' }}>
+                {user?.orgId || 'CORP'}
+              </span>
+            )}
           </div>
 
           {/* Nav */}
@@ -159,21 +169,25 @@ export default function DashboardShell({ children, role }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 color: '#fff', fontWeight: 700, fontSize: 'var(--text-sm)', flexShrink: 0,
               }}>
-                {user?.name?.[0]?.toUpperCase() || 'U'}
+                {user?.name?.[0]?.toUpperCase() || 'C'}
               </div>
               <div style={{ overflow: 'hidden' }}>
-                <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.name}</div>
-                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.email}</div>
+                <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user?.name || 'Corporate Partner'}
+                </div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user?.companyName || user?.email}
+                </div>
               </div>
             </div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <Link to="/" className="btn btn-ghost btn-sm" style={{ flex: 1, justifyContent: 'center' }}>
+              <Link to="/" className="btn btn-ghost btn-sm" style={{ flex: 1, justifyContent: 'center' }} title="Tvarita Homepage">
                 <Home size={14} />
               </Link>
-              <Link to="/app/notifications" className="btn btn-ghost btn-sm" style={{ flex: 1, justifyContent: 'center' }}>
+              <Link to={notifLink} className="btn btn-ghost btn-sm" style={{ flex: 1, justifyContent: 'center' }} title="Notifications">
                 <Bell size={14} />
               </Link>
-              <button className="btn btn-ghost btn-sm" style={{ flex: 1, justifyContent: 'center', color: 'var(--color-error)' }} onClick={handleLogout}>
+              <button className="btn btn-ghost btn-sm" style={{ flex: 1, justifyContent: 'center', color: 'var(--color-error)' }} onClick={handleLogout} title="Sign Out">
                 <LogOut size={14} />
               </button>
             </div>
@@ -192,20 +206,24 @@ export default function DashboardShell({ children, role }) {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '0 1.5rem',
         }}>
-          <button className="btn btn-icon btn-ghost" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar">
-            <Menu size={20} />
-          </button>
-
-          <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
-            {roleLabel}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <button className="btn btn-icon btn-ghost" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar">
+              <Menu size={20} />
+            </button>
+            <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
+              {roleLabel}
+            </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Link to="/app/notifications" className="btn btn-icon btn-ghost" aria-label="Notifications">
-              <Bell size={20} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <Link to="/corporate/experiences" className="btn btn-secondary btn-sm hide-mobile" style={{ fontSize: 'var(--text-xs)' }}>
+              <Briefcase size={14} /> Browse Experiences
             </Link>
-            <Link to="/app/profile" className="btn btn-icon btn-ghost" aria-label="Profile">
-              <User size={20} />
+            <Link to={notifLink} className="btn btn-icon btn-ghost" aria-label="Notifications">
+              <Bell size={18} />
+            </Link>
+            <Link to={profileLink} className="btn btn-icon btn-ghost" aria-label="Profile">
+              <User size={18} />
             </Link>
           </div>
         </header>

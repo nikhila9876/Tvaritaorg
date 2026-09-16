@@ -1,6 +1,8 @@
 /**
  * auth.js — MCP tool definitions for guest OTP authentication.
  *
+ * AUTH: request_otp and verify_otp are ANONYMOUS (they create the session).
+ * See AUTH_REQUIREMENTS.md.
  * Wraps:
  *   POST /api/auth/guest/otp/request
  *   POST /api/auth/guest/otp/verify

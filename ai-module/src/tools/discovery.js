@@ -1,6 +1,7 @@
 /**
  * discovery.js — MCP tool definitions for public discovery endpoints.
  *
+ * AUTH: all tools ANONYMOUS (no Express auth middleware). See AUTH_REQUIREMENTS.md.
  * Tools in this file wrap unauthenticated (public) backend REST endpoints
  * for browsing states, events, artists, and timeslots.
  */

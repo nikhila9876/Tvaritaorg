@@ -1,6 +1,10 @@
 /**
  * payments.js — MCP tools for Person A payment create + status.
  *
+ * AUTH: create_payment and get_payment_status are ANONYMOUS, including after
+ * school/corporate bookings. Backend POST /payments/create has validateBody only
+ * (booking_id, no email, no requireGuest). See AUTH_REQUIREMENTS.md.
+ *
  * ⚠️  SCHEMA SOURCE: Inspected backend 2026-09-16 (same on
  *     origin/feature/person-a-guest-auth). Person A confirmed the paths exist;
  *     request/response fields taken from Zod + payments.test.js, not old docs.

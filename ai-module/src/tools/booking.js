@@ -1,5 +1,12 @@
 /**
- * booking.js — MCP tool definition for individual booking creation.
+ * booking.js — MCP tools for individual / school / corporate booking + status.
+ *
+ * AUTH (see AUTH_REQUIREMENTS.md):
+ *   create_individual_booking  REQUIRES_SESSION (AI policy: inject guest_email)
+ *   create_school_booking      ANONYMOUS
+ *   create_corporate_booking   ANONYMOUS
+ *   get_booking_status         ANONYMOUS
+ * Backend: no requireGuest on any of these routes (validateBody only).
  *
  * Wraps: POST /api/bookings/individual
  *

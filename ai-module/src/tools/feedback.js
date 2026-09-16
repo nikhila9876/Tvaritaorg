@@ -1,6 +1,11 @@
 /**
  * feedback.js — MCP tools for Person B public feedback (confirmed path by Person A).
  *
+ * AUTH (see AUTH_REQUIREMENTS.md):
+ *   submit_feedback      REQUIRES_SESSION (AI policy: inject guest_email)
+ *   get_artist_feedback  ANONYMOUS
+ * Backend POST /api/feedback has validateBody only — no requireGuest.
+ *
  * ⚠️  SCHEMA SOURCE: Inspected backend 2026-09-16 (feedbackCreateSchema +
  *     backend/tests/feedback.test.js). Same on origin/feature/person-a-guest-auth.
  *

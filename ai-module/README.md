@@ -86,6 +86,7 @@ npm test
 
 ```
 ai-module/
+├── AUTH_REQUIREMENTS.md    # per-tool ANONYMOUS vs REQUIRES_SESSION
 ├── package.json
 ├── .env.example
 ├── .gitignore

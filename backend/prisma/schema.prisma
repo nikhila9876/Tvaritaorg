@@ -1,10 +1,8 @@
-// Person B schema — artists, admin, feedback, schools, corporates, timeslots, payouts.
-// Bookings/Events are shared: Person A owns writes; Person B reads for admin/artist views.
+// Shared Prisma schema — Person A writes Event/Booking/Payment/Guest;
+// Person B owns Artist/Admin/Feedback/School/Corporate and reads bookings.
 //
-// MongoDB note: Prisma does not enforce referential actions (onDelete/onUpdate).
-// Application-level cascades live in src/services/cascadeService.js — Person A must
-// use the same pattern for Event/Booking deletes and any atomic slot-lock on
-// artist_id + slot_id (requires a replica set for Prisma transactions).
+// MongoDB: no DB-level FK cascades — use cascadeService.js for deletes.
+// Replica set required for Prisma $transaction (slot locks, CSV, payments).
 
 generator client {
   provider = "prisma-client-js"
@@ -33,9 +31,19 @@ enum PayoutStatus {
 
 enum BookingStatus {
   pending
+  hold
+  awaiting_payment
   confirmed
   cancelled
   completed
+  no_artist_available_pending_admin
+}
+
+enum PaymentStatus {
+  created
+  pending
+  succeeded
+  failed
 }
 
 model Admin {
@@ -106,19 +114,22 @@ model Corporate {
 }
 
 model TimeSlot {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  artistId  String   @db.ObjectId
-  date      String
-  startTime String
-  endTime   String
-  available Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String    @id @default(auto()) @map("_id") @db.ObjectId
+  artistId          String    @db.ObjectId
+  date              String
+  startTime         String
+  endTime           String
+  available         Boolean   @default(true)
+  lockedUntil       DateTime?
+  lockedByBookingId String?   @db.ObjectId
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   artist Artist @relation(fields: [artistId], references: [id])
 
   @@unique([artistId, date, startTime, endTime])
   @@index([artistId, date])
+  @@index([lockedUntil])
 }
 
 model Feedback {
@@ -141,7 +152,17 @@ model Feedback {
   @@index([status, createdAt])
 }
 
-/// Shared with Person A (Person A writes; Person B reads).
+model State {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String   @unique
+  code      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events Event[]
+}
+
+/// Shared — Person A owns writes; Person B reads.
 model Event {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   title     String
@@ -150,32 +171,61 @@ model Event {
   startTime String?
   endTime   String?
   location  String?
+  stateId   String?  @db.ObjectId
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  state    State?    @relation(fields: [stateId], references: [id])
   bookings Booking[]
   payouts  Payout[]
+
+  @@index([stateId])
+  @@index([date])
 }
 
-/// Shared with Person A (Person A writes booking state; Person B may assign artist).
+/// Shared — Person A owns writes; Person B may assign artistId on pending-admin.
 model Booking {
-  id           String        @id @default(auto()) @map("_id") @db.ObjectId
-  eventId      String        @db.ObjectId
-  artistId     String?       @db.ObjectId
-  guestEmail   String?
-  guestName    String?
-  organization String?
-  bookingType  String?
-  status       BookingStatus @default(pending)
-  grossAmount  Float         @default(0)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id                     String        @id @default(auto()) @map("_id") @db.ObjectId
+  eventId                String?       @db.ObjectId
+  artistId               String?       @db.ObjectId
+  slotId                 String?       @db.ObjectId
+  guestEmail             String?
+  guestName              String?
+  organization           String?
+  bookingType            String?
+  status                 BookingStatus @default(pending)
+  headcount              Int           @default(1)
+  grossAmount            Float         @default(0)
+  artForm                String?
+  date                   String?
+  holdExpiresAt          DateTime?
+  paymentWindowExpiresAt DateTime?
+  schoolId               String?       @db.ObjectId
+  corporateId            String?       @db.ObjectId
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
 
-  event  Event   @relation(fields: [eventId], references: [id])
-  artist Artist? @relation(fields: [artistId], references: [id])
+  event    Event?    @relation(fields: [eventId], references: [id])
+  artist   Artist?   @relation(fields: [artistId], references: [id])
+  payments Payment[]
 
   @@index([artistId])
   @@index([eventId])
+  @@index([status, holdExpiresAt])
+  @@index([status, paymentWindowExpiresAt])
+  @@index([artistId, date, status])
+}
+
+/// Person A — unique claim on artist+date for School/Corporate race protection
+model ArtistDateHold {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  artistId  String   @db.ObjectId
+  date      String
+  bookingId String?  @db.ObjectId
+  createdAt DateTime @default(now())
+
+  @@unique([artistId, date])
+  @@index([bookingId])
 }
 
 model Payout {
@@ -205,4 +255,53 @@ model NotificationLog {
   status    String
   error     String?
   createdAt DateTime @default(now())
+}
+
+/// Person A — guest OTP auth
+model Guest {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  name      String?
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  otps GuestOtp[]
+}
+
+model GuestOtp {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  guestId   String?   @db.ObjectId
+  email     String
+  codeHash  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  guest Guest? @relation(fields: [guestId], references: [id])
+
+  @@index([email, createdAt])
+}
+
+/// Person A — payments (idempotent webhook via gatewayPaymentId unique)
+model Payment {
+  id                String        @id @default(auto()) @map("_id") @db.ObjectId
+  bookingId         String        @db.ObjectId
+  amount            Float
+  currency          String        @default("INR")
+  headcount         Int
+  ratePerHead       Float
+  status            PaymentStatus @default(created)
+  gatewayPaymentId  String?       @unique
+  gatewayOrderId    String?
+  idempotencyKey    String?       @unique
+  splitRecorded     Boolean       @default(false)
+  confirmedAt       DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+
+  @@index([bookingId])
+  @@index([status])
 }

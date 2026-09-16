@@ -33,11 +33,13 @@ cd backend
 cp .env.example .env
 # Set DATABASE_URL=mongodb://127.0.0.1:27017/tvarita?replicaSet=rs0
 npm install
-npx prisma generate
-npx prisma db push
-npm run db:seed
+npm run db:setup
 npm run dev
 ```
+
+`npm run db:setup` runs `prisma generate && prisma db push && seed`.  
+**Production / local indexes** come from Prisma `db push` (schema `@@unique` / `@@index` / `@unique`).  
+Test-only Mongo driver index helpers in `tests/setup.js` are a workaround when `db push` cannot run in CI agents — they are not the production path.
 
 API base: `http://localhost:5000/api`  
 Health: `http://localhost:5000/health`
@@ -47,21 +49,21 @@ Default admin (from seed / `.env`):
 - Email: `admin@tvarita.org`
 - Password: `AdminPass123!`
 
-## MongoDB notes (Person A)
+## MongoDB notes (Person A / B)
 
-- IDs are `ObjectId` (`@db.ObjectId`). There are **no DB-level FK cascades**.
-- Cascades are applied in `src/services/cascadeService.js` (`deleteArtistWithCascade`, `deleteEventWithCascade`).
-- Any atomic slot-lock on `artist_id + slot_id` must use a Prisma/`$transaction` against a **replica set**.
+- IDs are `ObjectId`. There are **no DB-level FK cascades**.
+- Cascades: `src/services/cascadeService.js`.
+- Merge order + assign-artist rules: [docs/MERGE_CLOSEOUT.md](./docs/MERGE_CLOSEOUT.md).
+- Contract: [docs/integration-person-a.md](./docs/integration-person-a.md).
 
 ## Modules
 
-1. Artist auth & onboarding
-2. Artist self-service
-3. Feedback & moderation (+ 72h auto-approve)
-4. Admin operations
-5. Internal utilities (`/internal/*`)
-
-See [docs/integration-person-a.md](./docs/integration-person-a.md) for the Person A contract.
+1. Artist auth & onboarding (Person B)
+2. Artist self-service (Person B)
+3. Feedback & moderation (+ 72h auto-approve) (Person B)
+4. Admin operations (Person B)
+5. Internal utilities (`/internal/*`) (Person B)
+6. Guest auth, discovery, bookings, payments (Person A)
 
 ## Tests
 
@@ -71,4 +73,4 @@ Tests spin up an in-memory MongoDB replica set (`mongodb-memory-server`):
 npm test
 ```
 
-Covered: CSV email dedupe, feedback rate-limit, 72h auto-approve, `/internal/artists/available`.
+Covered: CSV dedupe, feedback rate-limit, 72h auto-approve, available-artists, guest OTP, discovery, **concurrent slot/artist+date bookings**, payment webhook idempotency, admin status filters + pending-admin assign.

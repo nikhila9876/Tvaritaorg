@@ -13,6 +13,7 @@ export async function deleteArtistWithCascade(artistId) {
     await tx.timeSlot.deleteMany({ where: { artistId } });
     await tx.feedback.deleteMany({ where: { artistId } });
     await tx.payout.deleteMany({ where: { artistId } });
+    await tx.artistDateHold.deleteMany({ where: { artistId } });
     await tx.booking.updateMany({
       where: { artistId },
       data: { artistId: null },
@@ -24,6 +25,10 @@ export async function deleteArtistWithCascade(artistId) {
 /** Former: Booking/Payout Cascade; also clears Feedback rows keyed by eventId */
 export async function deleteEventWithCascade(eventId) {
   await prisma.$transaction(async (tx) => {
+    const bookings = await tx.booking.findMany({ where: { eventId } });
+    for (const b of bookings) {
+      await tx.payment.deleteMany({ where: { bookingId: b.id } });
+    }
     await tx.payout.deleteMany({ where: { eventId } });
     await tx.booking.deleteMany({ where: { eventId } });
     await tx.feedback.deleteMany({ where: { eventId } });

@@ -8,6 +8,7 @@ import {
 } from '../validators/schemas.js';
 import { sendNotification } from '../services/notificationService.js';
 import { getAvailableArtists } from '../services/artistSelfService.js';
+import { releaseExpiredHolds } from '../services/personA/paymentService.js';
 
 const router = Router();
 
@@ -31,6 +32,13 @@ router.get(
       req.validatedQuery.date,
     );
     res.json(result);
+  }),
+);
+
+router.post(
+  '/jobs/release-expired-holds',
+  asyncHandler(async (_req, res) => {
+    res.json(await releaseExpiredHolds());
   }),
 );
 

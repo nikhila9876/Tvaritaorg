@@ -127,8 +127,10 @@ function summarizeImport(results) {
   };
 }
 
-export async function listBookings() {
+export async function listBookings(status) {
+  const where = status ? { status } : {};
   const bookings = await prisma.booking.findMany({
+    where,
     include: {
       event: true,
       artist: { select: { id: true, name: true, email: true, artForm: true } },
@@ -146,6 +148,8 @@ export async function listBookings() {
     booking_type: b.bookingType,
     status: b.status,
     gross_amount: b.grossAmount,
+    hold_expires_at: b.holdExpiresAt ?? null,
+    payment_window_expires_at: b.paymentWindowExpiresAt ?? null,
     event: b.event
       ? {
           id: b.event.id,
@@ -181,7 +185,26 @@ export async function assignArtistToEvent(eventId, artistId) {
   });
 
   if (!booking) {
-    throw new AppError('No booking found for this event to assign', 404);
+    // Pending-admin bookings often have eventId=null — cannot be reached via this route.
+    throw new AppError(
+      'No booking found for this event. For pending-admin bookings without an Event, use POST /api/admin/bookings/{booking_id}/assign-artist',
+      404,
+      {
+        hint: 'booking_assign_path',
+        path: '/api/admin/bookings/{booking_id}/assign-artist',
+      },
+    );
+  }
+
+  // Pending-admin / awaiting payment flow — Person A owns payment window + notify
+  if (
+    booking.status === 'no_artist_available_pending_admin' ||
+    booking.status === 'awaiting_payment'
+  ) {
+    const { onManualArtistAssignment } = await import(
+      './personA/paymentService.js'
+    );
+    return onManualArtistAssignment(booking.id, artistId);
   }
 
   const updated = await prisma.booking.update({
@@ -189,7 +212,6 @@ export async function assignArtistToEvent(eventId, artistId) {
     data: { artistId, status: 'confirmed' },
   });
 
-  // Ensure a pending payout row exists for this assignment.
   const existingPayout = await prisma.payout.findFirst({
     where: { artistId, eventId },
   });
@@ -212,6 +234,17 @@ export async function assignArtistToEvent(eventId, artistId) {
     artist_id: artistId,
     status: updated.status,
   };
+}
+
+/**
+ * Assign artist to a pending-admin booking that has no Event yet (Person A path).
+ * Mounted for admin use; opens 48h payment window.
+ */
+export async function assignArtistToPendingBooking(bookingId, artistId) {
+  const { onManualArtistAssignment } = await import(
+    './personA/paymentService.js'
+  );
+  return onManualArtistAssignment(bookingId, artistId);
 }
 
 export async function listPayouts() {

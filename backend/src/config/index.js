@@ -1,4 +1,12 @@
 import 'dotenv/config';
+import {
+  ARTIST_SHARE_RATE,
+  BOOKING_RATES,
+  GUEST_SESSION_TTL,
+  OTP_TTL_MINUTES,
+  PAYMENT_WINDOW_HOURS,
+  SLOT_HOLD_MINUTES,
+} from '../constants/pricing.js';
 
 export const config = {
   port: Number(process.env.PORT || 5000),
@@ -14,5 +22,10 @@ export const config = {
     senderEmail: process.env.BREVO_SENDER_EMAIL || 'no-reply@tvaritacollective.com',
     senderName: process.env.BREVO_SENDER_NAME || 'Tvarita',
   },
-  artistShareRate: 0.7,
+  artistShareRate: ARTIST_SHARE_RATE,
+  bookingRates: BOOKING_RATES,
+  otpTtlMinutes: OTP_TTL_MINUTES,
+  guestSessionTtl: GUEST_SESSION_TTL,
+  slotHoldMinutes: SLOT_HOLD_MINUTES,
+  paymentWindowHours: PAYMENT_WINDOW_HOURS,
 };

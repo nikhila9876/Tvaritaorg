@@ -121,8 +121,7 @@ export async function getAvailableArtists(artForm, date) {
       timeslots: { where: { date } },
       bookings: {
         where: {
-          status: { in: ['pending', 'confirmed'] },
-          event: { date },
+          status: { in: ['hold', 'awaiting_payment', 'pending', 'confirmed'] },
         },
         include: { event: true },
       },
@@ -131,7 +130,9 @@ export async function getAvailableArtists(artForm, date) {
 
   const available = artists.filter((a) => {
     const blockedSlot = a.timeslots.some((t) => t.available === false);
-    const hasBookingConflict = a.bookings.length > 0;
+    const hasBookingConflict = a.bookings.some(
+      (b) => b.date === date || b.event?.date === date,
+    );
     // Also treat "no open available slot" as conflicting only when they marked unavailable.
     // If they have available=true slots or no slots, they are considered available.
     return !blockedSlot && !hasBookingConflict;

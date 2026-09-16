@@ -80,6 +80,54 @@ export const corporateCsvRowSchema = z.object({
   phone: z.string().optional().or(z.literal('')),
 });
 
+export const guestOtpRequestSchema = z.object({
+  email: z.string().email(),
+  name: z.string().max(200).optional(),
+});
+
+export const guestOtpVerifySchema = z.object({
+  email: z.string().email(),
+  otp: z.string().min(4).max(8),
+});
+
+export const individualBookingSchema = z.object({
+  artist_id: z.string().min(1),
+  slot_id: z.string().min(1),
+  guest_email: z.string().email(),
+  guest_name: z.string().max(200).optional(),
+  headcount: z.coerce.number().int().min(1).max(50).default(1),
+});
+
+export const schoolBookingSchema = z.object({
+  school_email: z.string().email(),
+  art_form: z.string().min(1),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  headcount: z.coerce.number().int().min(1).max(5000),
+  guest_name: z.string().max(200).optional(),
+  location: z.string().max(300).optional(),
+});
+
+export const corporateBookingSchema = z.object({
+  corporate_email: z.string().email(),
+  art_form: z.string().min(1),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  headcount: z.coerce.number().int().min(1).max(5000),
+  guest_name: z.string().max(200).optional(),
+  location: z.string().max(300).optional(),
+});
+
+export const paymentCreateSchema = z.object({
+  booking_id: z.string().min(1),
+  idempotency_key: z.string().min(8).max(128).optional(),
+});
+
+export const paymentWebhookSchema = z.object({
+  gateway_payment_id: z.string().min(1).optional(),
+  gateway_order_id: z.string().min(1).optional(),
+  payment_id: z.string().min(1).optional(),
+  status: z.enum(['succeeded', 'success', 'failed']),
+});
+
 export function validateArtistRow(data) {
   const parsed = artistFieldsSchema.safeParse({
     email: data.email,

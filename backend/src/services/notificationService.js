@@ -90,6 +90,12 @@ function subjectForTemplate(template) {
       return 'Your Tvarita feedback status update';
     case 'artist_invite':
       return 'Welcome to Tvarita Arts Collective';
+    case 'guest_otp':
+      return 'Your Tvarita login code';
+    case 'booking_confirmation':
+      return 'Your Tvarita booking is confirmed';
+    case 'payment_window':
+      return 'Complete your Tvarita payment';
     default:
       return 'Tvarita notification';
   }
@@ -107,6 +113,27 @@ function bodyForTemplate(template, data) {
         data.link || '',
         '',
         'If you did not expect this email, ignore it.',
+      ].join('\n');
+    case 'guest_otp':
+      return [
+        `Hello ${data.name || 'Guest'},`,
+        '',
+        `Your Tvarita OTP is ${data.otp}.`,
+        `It expires in ${data.ttl_minutes || 5} minutes.`,
+      ].join('\n');
+    case 'booking_confirmation':
+      return [
+        `Hello ${data.name || 'Guest'},`,
+        '',
+        `Your booking ${data.booking_id || ''} is confirmed.`,
+        `Amount paid: ₹${data.amount ?? ''}.`,
+      ].join('\n');
+    case 'payment_window':
+      return [
+        `Hello ${data.name || 'Guest'},`,
+        '',
+        `An artist has been assigned to booking ${data.booking_id || ''}.`,
+        `Please complete payment within ${data.window_hours || 48} hours.`,
       ].join('\n');
     case 'payout_confirmation':
       return [

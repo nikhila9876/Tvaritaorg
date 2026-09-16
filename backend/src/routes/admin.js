@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { asyncHandler } from '../utils/helpers.js';
+import { z } from 'zod';
+import { asyncHandler, AppError } from '../utils/helpers.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { validateBody, validateQuery } from '../middleware/validate.js';
 import { csvUpload } from '../middleware/upload.js';
@@ -20,6 +21,7 @@ import {
   importCorporatesFromCsv,
   listBookings,
   assignArtistToEvent,
+  assignArtistToPendingBooking,
   listPayouts,
   markPayoutPaid,
 } from '../services/adminService.js';
@@ -28,7 +30,20 @@ import {
   approveFeedback,
   rejectFeedback,
 } from '../services/feedbackService.js';
-import { AppError } from '../utils/helpers.js';
+
+const adminBookingsQuerySchema = z.object({
+  status: z
+    .enum([
+      'pending',
+      'hold',
+      'awaiting_payment',
+      'confirmed',
+      'cancelled',
+      'completed',
+      'no_artist_available_pending_admin',
+    ])
+    .optional(),
+});
 
 const router = Router();
 
@@ -120,8 +135,9 @@ router.post(
 /* ── Bookings / events / payouts ─────────────────────────────────── */
 router.get(
   '/bookings',
-  asyncHandler(async (_req, res) => {
-    res.json({ bookings: await listBookings() });
+  validateQuery(adminBookingsQuerySchema),
+  asyncHandler(async (req, res) => {
+    res.json({ bookings: await listBookings(req.validatedQuery?.status) });
   }),
 );
 
@@ -130,6 +146,18 @@ router.post(
   validateBody(assignArtistSchema),
   asyncHandler(async (req, res) => {
     const result = await assignArtistToEvent(req.params.event_id, req.body.artist_id);
+    res.json(result);
+  }),
+);
+
+router.post(
+  '/bookings/:booking_id/assign-artist',
+  validateBody(assignArtistSchema),
+  asyncHandler(async (req, res) => {
+    const result = await assignArtistToPendingBooking(
+      req.params.booking_id,
+      req.body.artist_id,
+    );
     res.json(result);
   }),
 );

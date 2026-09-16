@@ -1,9 +1,9 @@
-# Person A ↔ Person B integration contract (provisional)
+# Person A ↔ Person B integration contract
 
-> **Status:** Provisional until Person A confirms field names/response shapes.
-> Do not change without syncing with Person A.
+> **Status:** Active — decisions below are locked unless both sides agree to change.
+> See also [MERGE_CLOSEOUT.md](./MERGE_CLOSEOUT.md) for merge order and PR links.
 
-## Stack (Person B)
+## Stack
 
 | Layer | Choice |
 |-------|--------|
@@ -11,32 +11,39 @@
 | Framework | Express 5 |
 | DB | **MongoDB** via Prisma (replica set required for `$transaction`) |
 | ORM | Prisma |
-| Auth | JWT (Bearer) + bcrypt password hashes |
+| Auth | JWT (Bearer) + bcrypt |
 | Email | Brevo (`BREVO_API_KEY`); console fallback in dev |
-| CSV | `csv-parse` + multer |
-| Jobs | `node-cron` (hourly feedback auto-approve) |
+| Jobs | `node-cron` |
 
-### Shared schema / ObjectIds (Person A must review before merge)
+### Shared schema
 
-- All model `id` fields are Mongo `ObjectId` (`@default(auto()) @map("_id") @db.ObjectId`).
-- FK fields (`artistId`, `eventId`, `bookingId`, etc.) are `String @db.ObjectId`.
-- **No DB-level cascades.** Use `deleteArtistWithCascade` / `deleteEventWithCascade` in `src/services/cascadeService.js`.
-- Atomic slot-lock on `artist_id + slot_id` must run inside a Prisma transaction against a **replica set**.
+- All `id` fields: Mongo `ObjectId` (`@default(auto()) @map("_id") @db.ObjectId`).
+- No DB-level FK cascades — use `cascadeService.js`.
+- Slot locks and artist+date claims use Prisma `$transaction` (replica set required).
+
+## BookingStatus (canonical — both sides)
+
+```
+pending | hold | awaiting_payment | confirmed | cancelled | completed | no_artist_available_pending_admin
+```
+
+## Manual artist assignment
+
+| Case | Endpoint |
+|------|----------|
+| Booking already has `eventId` | `POST /api/admin/events/{event_id}/assign-artist` |
+| Pending-admin (`eventId` null) | `POST /api/admin/bookings/{booking_id}/assign-artist` |
 
 ## 1. `GET /internal/artists/available`
 
-Used by Person A's Corporate/School auto-assignment.
+**Decision (locked):** response is **date-level artist availability**, sorted by `rating_avg` desc.  
+**`available_slots` is intentionally omitted.** School/Corporate do not pick wall-clock slots; Individual bookings use `TimeSlot` via Person A’s own APIs.
 
-**Auth:** header `x-internal-api-key: <INTERNAL_API_KEY>`
+**Auth:** `x-internal-api-key`
 
-**Query**
+**Query:** `art_form`, `date` (`YYYY-MM-DD`)
 
-| Param | Type | Required | Example |
-|-------|------|----------|---------|
-| `art_form` | string | yes | `Madhubani` |
-| `date` | `YYYY-MM-DD` | yes | `2026-10-01` |
-
-**Response `200`**
+**Response:**
 
 ```json
 {
@@ -44,7 +51,7 @@ Used by Person A's Corporate/School auto-assignment.
   "date": "2026-10-01",
   "artists": [
     {
-      "id": "clx...",
+      "id": "...",
       "name": "High Rated",
       "email": "high@example.com",
       "art_form": "Madhubani",
@@ -57,45 +64,14 @@ Used by Person A's Corporate/School auto-assignment.
 }
 ```
 
-**Rules**
+**Rules:** `status=active`, matching `art_form`, no `available=false` timeslot that day, no active booking conflict that day, sorted by `rating_avg` desc.
 
-- Only `status=active`
-- Matching `art_form` (exact)
-- No conflicting timeslot (`available=false` on that date)
-- No pending/confirmed booking on an event with that date
-- Sorted by `rating_avg` descending (approved feedback only feeds live rating)
+## 2. Shared Event / Booking
 
-## 2. Shared `Booking` / `Event` tables
-
-- **Person A** owns writes to booking state (create/update status/payments).
-- **Person B** reads for `GET /api/admin/bookings` and `GET /api/artist/me/bookings`.
-- **Person B** may write `artistId` via `POST /api/admin/events/{event_id}/assign-artist` (manual reassignment).
-
-### Booking fields (Person B schema)
-
-| Field | Notes |
-|-------|-------|
-| `id` | Mongo ObjectId |
-| `eventId` | FK → Event |
-| `artistId` | nullable until assigned |
-| `guestEmail`, `guestName`, `organization` | optional |
-| `bookingType` | e.g. `corporate`, `school`, `guest` |
-| `status` | `pending` \| `confirmed` \| `cancelled` \| `completed` |
-| `grossAmount` | number; artist share = 70% |
-
-Please confirm naming (`camelCase` in DB / `snake_case` in JSON API) before Person A locks their write path.
+- **Person A** owns writes to booking/payment/event creation for guest journeys.
+- **Person B** reads bookings; may assign artist via the admin routes above.
+- `Booking.eventId` is **optional** (null while `no_artist_available_pending_admin`).
 
 ## 3. `POST /internal/notifications/send`
 
-Owned by Person B; Person A may call for booking confirmations if desired.
-
-**Auth:** `x-internal-api-key`
-
-```json
-{
-  "channel": "email",
-  "to": "user@example.com",
-  "template": "artist_set_password",
-  "data": { "name": "...", "link": "..." }
-}
-```
+Owned by Person B. Person A uses it (in-process) for OTP, booking confirmation, payment-window emails.

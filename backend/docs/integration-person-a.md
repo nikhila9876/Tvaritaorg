@@ -12,7 +12,7 @@
 | DB | **MongoDB** via Prisma (replica set required for `$transaction`) |
 | ORM | Prisma |
 | Auth | JWT (Bearer) + bcrypt password hashes |
-| Email | Brevo (`BREVO_API_KEY`); console fallback in dev |
+| Email | nodemailer SMTP (`EMAIL_MODE=console` fallback in dev) |
 | CSV | `csv-parse` + multer |
 | Jobs | `node-cron` (hourly feedback auto-approve) |
 

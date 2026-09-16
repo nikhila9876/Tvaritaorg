@@ -10,6 +10,7 @@ import internalRoutes from './routes/internal.js';
 import discoveryRoutes from './routes/personA/discovery.js';
 import bookingRoutes from './routes/personA/bookings.js';
 import paymentRoutes from './routes/personA/payments.js';
+import aiRoutes from './routes/ai.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 
 export function createApp() {
@@ -32,6 +33,7 @@ export function createApp() {
   app.use('/api', discoveryRoutes);
   app.use('/api/bookings', bookingRoutes);
   app.use('/api/payments', paymentRoutes);
+  app.use('/api/ai', aiRoutes);
   app.use('/internal', internalRoutes);
 
   app.use(notFoundHandler);

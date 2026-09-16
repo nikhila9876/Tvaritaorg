@@ -12,7 +12,7 @@ import { config } from '../src/config.js';
 import { discoveryTools } from '../src/tools/discovery.js';
 
 // OpenRouter's Gemma 4 model string (from their API)
-const MODEL_NAME = 'google/gemma-4-31b-it'; 
+const MODEL_NAME = config.llmModel; 
 
 async function runTest() {
   const apiKey = config.llmApiKey;

@@ -6,8 +6,8 @@ AI/chatbot layer for the **Tvarita Arts Platform** — an MCP server wrapping th
 
 ```
 ┌─────────────────────────────────────────────┐
-│  Chatbot Agent (chatbot.js)                 │
-│  OpenAI function-calling agent loop         │
+│  Chatbot Agent (agent.js)                   │
+│  OpenRouter + Gemma 4 function-calling loop │
 │                                             │
 │  ┌────────────────────────────────────────┐ │
 │  │  MCP Server (mcp-server.js)            │ │
@@ -40,7 +40,7 @@ npm install
 
 ```bash
 # Start the chatbot (interactive terminal)
-npm start
+npm run agent
 
 # Run the MCP server (stdio transport)
 npm run mcp
@@ -54,8 +54,10 @@ npm test
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `BACKEND_API_URL` | Yes | Base URL of the Tvarita backend API |
-| `LLM_API_KEY` | Yes (for chatbot) | OpenAI API key or compatible |
-| `LLM_MODEL` | No | Model to use (default: `gpt-4o`) |
+| `LLM_API_KEY` | Yes (for chatbot) | OpenRouter API key |
+| `LLM_MODEL` | No | Model id. Default: `google/gemma-4-26b-a4b-it:free` (dev). Use `google/gemma-4-31b-it` for demo/production. |
+| `BACKEND_TIMEOUT_MS` | No | Backend HTTP timeout in ms (default: `15000`) |
+| `OPENROUTER_TIMEOUT_MS` | No | OpenRouter timeout in ms (default: `60000`) |
 | `MCP_SERVER_PORT` | No | Reserved for future HTTP transport (default: `3001`) |
 
 ## V1 Endpoints Covered
@@ -88,7 +90,9 @@ ai-module/
 │   │   ├── auth.js          # guest OTP auth tools
 │   │   └── booking.js       # individual booking tool
 │   ├── mcp-server.js        # MCP server (registers all tools)
-│   └── chatbot.js           # conversational agent loop
+│   ├── agent.js             # conversational agent loop
+│   ├── logger.js            # stderr logging with secret redaction
+│   └── mcp-result.js        # MCP success/error helpers
 └── tests/
     ├── api-client.test.js   # HTTP client tests (mocked fetch)
     ├── discovery.test.js    # discovery tools tests

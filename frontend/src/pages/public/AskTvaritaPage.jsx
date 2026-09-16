@@ -145,6 +145,10 @@ export default function AskTvaritaPage() {
       );
     } catch (err) {
       console.warn('[AskTvarita] Backend RAG call failed, checking local cultural fallback:', err);
+      const isTimeout = err.code === 'ECONNABORTED' || err.message?.includes('timeout');
+      if (isTimeout) {
+        setError('The knowledge retrieval request timed out. Retrying with local cultural archive fallback...');
+      }
       // Fallback synthesis from local client knowledge
       const qLower = query.toLowerCase();
       let matchedKey = null;

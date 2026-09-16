@@ -70,4 +70,32 @@ describe('discoveryTools', () => {
     expect(apiGet).not.toHaveBeenCalled();
     expect(JSON.parse(result.content[0].text).code).toBe('VALIDATION_ERROR');
   });
+
+  test('get_artist_timeslots calls public artists/:id/timeslots', async () => {
+    apiGet.mockResolvedValueOnce({
+      timeslots: [
+        { id: 'slot1', date: '2026-10-20', start_time: '10:00', end_time: '12:00', available: true },
+      ],
+    });
+    const result = await handleDiscoveryToolCall('get_artist_timeslots', { artist_id: 'artist1' });
+
+    expect(apiGet).toHaveBeenCalledWith('/artists/artist1/timeslots');
+    expect(result.isError).toBeUndefined();
+    expect(JSON.parse(result.content[0].text).timeslots[0].id).toBe('slot1');
+  });
+
+  test('get_artist_timeslots requires artist_id', async () => {
+    const result = await handleDiscoveryToolCall('get_artist_timeslots', {});
+    expect(result.isError).toBe(true);
+    expect(apiGet).not.toHaveBeenCalled();
+    expect(JSON.parse(result.content[0].text).code).toBe('VALIDATION_ERROR');
+  });
+
+  test('get_event_artists still hits events/:id/artists (booking-assigned list)', async () => {
+    apiGet.mockResolvedValueOnce({ event_id: 'e1', artists: [] });
+    const result = await handleDiscoveryToolCall('get_event_artists', { event_id: 'e1' });
+
+    expect(apiGet).toHaveBeenCalledWith('/events/e1/artists');
+    expect(JSON.parse(result.content[0].text).artists).toEqual([]);
+  });
 });

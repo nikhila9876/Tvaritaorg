@@ -47,7 +47,11 @@ export const discoveryTools = [
   },
   {
     name: 'get_event_artists',
-    description: 'Get artist cards (name, rating, etc.) performing at a specific event.',
+    description:
+      'Get artists already booked or assigned on this event (name, rating, art_form). ' +
+      'This is "who is on this event," not a catalog of who is available to book. ' +
+      'An empty artists array is expected when the event has no bookings yet. ' +
+      'Individual booking does not use event_id — it needs artist_id + slot_id from get_artist_timeslots.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -58,7 +62,11 @@ export const discoveryTools = [
   },
   {
     name: 'get_artist_timeslots',
-    description: 'Get a public view of an artist\'s available timeslots.',
+    description:
+      'Get an artist\'s publicly available timeslots. No auth. Returns only slots with ' +
+      'available: true (locked/taken slots are omitted — do not filter again). ' +
+      'Each timeslot `id` is the slot_id for create_individual_booking. ' +
+      'Unknown artist_id returns 404.',
     inputSchema: {
       type: 'object',
       properties: {

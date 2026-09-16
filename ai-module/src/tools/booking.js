@@ -3,22 +3,22 @@
  *
  * Wraps: POST /api/bookings/individual
  *
- * ⚠️  SCHEMA SOURCE: Verified from feature/person-a-guest-auth branch on 2026-09-16.
- *     If Person A's schemas change before merge to main, re-verify these fields.
+ * ⚠️  SCHEMA SOURCE: Person A confirmed 2026-09-16 (guest-auth + public timeslots).
  *
  *     individualBookingSchema (Zod):
  *       artist_id:   string (required)
- *       slot_id:     string (required) — NOT "timeslot_id"
+ *       slot_id:     string (required) — NOT "timeslot_id"; from get_artist_timeslots `id`
  *       guest_email: string, email (required) — auto-injected from session store
  *       guest_name:  string, max 200 (optional)
  *       headcount:   int, 1–50, default 1
  *
  *     NO "date" field — backend infers date from the slot_id.
+ *     NO event_id — individual booking is artist+slot only.
  *     The LLM should call get_artist_timeslots first to know the date/time
  *     of each slot and confirm with the user before calling this tool.
  *
- *     AUTH NOTE: As of 2026-09-16, the booking route has NO auth middleware.
- *     Guest is identified by guest_email in the body, not by JWT. We send both:
+ *     AUTH NOTE: Booking identify-by-email; JWT is issued but unused.
+ *     No requireGuest middleware planned yet. We send both:
  *       - guest_email from session store (required by the schema)
  *       - Authorization: Bearer <token> as header (forward-compatible)
  *     This is intentionally redundant but harmless.

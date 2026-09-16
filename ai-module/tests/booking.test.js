@@ -36,10 +36,11 @@ describe('bookingTools', () => {
     sessionStore.clearSession(DEFAULT_CONVERSATION_ID);
   });
 
-  test('registers individual and school booking tools', () => {
+  test('registers individual, school, and corporate booking tools', () => {
     expect(bookingTools.map((t) => t.name)).toEqual([
       'create_individual_booking',
       'create_school_booking',
+      'create_corporate_booking',
     ]);
   });
 
@@ -211,5 +212,53 @@ describe('bookingTools', () => {
       'headcount',
       'school_email',
     ]);
+  });
+
+  test('create_corporate_booking sends Person A corporate body without requiring OTP', async () => {
+    apiPost.mockResolvedValueOnce({
+      booking: {
+        id: 'bk_corp',
+        status: 'awaiting_payment',
+        artist_id: 'art_top',
+        gross_amount: 5000,
+      },
+    });
+
+    const result = await handleBookingToolCall('create_corporate_booking', {
+      corporate_email: 'corp1@example.com',
+      art_form: 'Madhubani',
+      date: '2026-11-01',
+      headcount: 10,
+    });
+
+    expect(apiPost).toHaveBeenCalledWith('/bookings/corporate', {
+      corporate_email: 'corp1@example.com',
+      art_form: 'Madhubani',
+      date: '2026-11-01',
+      headcount: 10,
+    }, {});
+    expect(result.isError).toBeUndefined();
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.booking.status).toBe('awaiting_payment');
+    expect(parsed.booking.gross_amount).toBe(5000);
+  });
+
+  test('create_corporate_booking maps 404 to CORPORATE_NOT_FOUND', async () => {
+    apiPost.mockRejectedValueOnce({
+      error: 'Corporate not found — upload via admin CSV first',
+      status: 404,
+    });
+
+    const result = await handleBookingToolCall('create_corporate_booking', {
+      corporate_email: 'missing@example.com',
+      art_form: 'Madhubani',
+      date: '2026-11-01',
+      headcount: 10,
+    });
+
+    expect(result.isError).toBe(true);
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.code).toBe('CORPORATE_NOT_FOUND');
+    expect(parsed.status).toBe(404);
   });
 });

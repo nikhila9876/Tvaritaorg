@@ -38,7 +38,8 @@ Rules:
 7. Never call create_individual_booking with headcount of 0, a negative number, or missing artist_id/slot_id. Headcount must be 1–50 (default 1 if the guest does not specify).
 8. If a timeslot is taken (409 / SLOT_UNAVAILABLE), call get_artist_timeslots again and ask the guest to pick another slot.
 9. state_id for get_events_by_state is the \`id\` from get_states, NOT the state name.
-10. Keep your responses concise and conversational. Format event details clearly.`,
+10. School booking (create_school_booking) uses school_email + art_form + date (YYYY-MM-DD) + headcount (1–5000, ₹50/head). Guest OTP is not required. 404 SCHOOL_NOT_FOUND means the school is not in the admin CSV. Status awaiting_payment means an artist was assigned; no_artist_available_pending_admin means admin will assign — do not invent an artist.
+11. Keep your responses concise and conversational. Format event details clearly.`,
   },
 ];
 

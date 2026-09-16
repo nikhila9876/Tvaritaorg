@@ -15,7 +15,7 @@ AI/chatbot layer for the **Tvarita Arts Platform** — an MCP server wrapping th
 │  │  Tools:                                │ │
 │  │  ├── discovery (5 public endpoints)    │ │
 │  │  ├── auth (OTP request/verify)         │ │
-│  │  └── booking (individual booking)      │ │
+│  │  └── booking (individual + school)     │ │
 │  └────────────────────────────────────────┘ │
 │                 │                            │
 │           api-client.js                      │
@@ -72,6 +72,7 @@ npm test
 | `request_otp` | POST | `/api/auth/guest/otp/request` |
 | `verify_otp` | POST | `/api/auth/guest/otp/verify` |
 | `create_individual_booking` | POST | `/api/bookings/individual` |
+| `create_school_booking` | POST | `/api/bookings/school` |
 
 ## Project Structure
 
@@ -88,7 +89,7 @@ ai-module/
 │   ├── tools/
 │   │   ├── discovery.js     # public discovery tools
 │   │   ├── auth.js          # guest OTP auth tools
-│   │   └── booking.js       # individual booking tool
+│   │   └── booking.js       # individual + school booking tools
 │   ├── mcp-server.js        # MCP server (registers all tools)
 │   ├── agent.js             # conversational agent loop
 │   ├── logger.js            # stderr logging with secret redaction

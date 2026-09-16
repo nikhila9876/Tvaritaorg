@@ -36,9 +36,11 @@ describe('bookingTools', () => {
     sessionStore.clearSession(DEFAULT_CONVERSATION_ID);
   });
 
-  test('registers 1 booking tool', () => {
-    expect(bookingTools.length).toBe(1);
-    expect(bookingTools[0].name).toBe('create_individual_booking');
+  test('registers individual and school booking tools', () => {
+    expect(bookingTools.map((t) => t.name)).toEqual([
+      'create_individual_booking',
+      'create_school_booking',
+    ]);
   });
 
   test('create_individual_booking fails if guest is not authenticated', async () => {
@@ -141,5 +143,73 @@ describe('bookingTools', () => {
     expect(apiPost).not.toHaveBeenCalled();
     const parsed = JSON.parse(result.content[0].text);
     expect(parsed.code).toBe('VALIDATION_ERROR');
+  });
+
+  test('create_school_booking sends Person A school body without requiring OTP', async () => {
+    apiPost.mockResolvedValueOnce({
+      booking: {
+        id: 'bk_school',
+        status: 'no_artist_available_pending_admin',
+        event_id: null,
+        gross_amount: 2000,
+      },
+    });
+
+    const result = await handleBookingToolCall('create_school_booking', {
+      school_email: 'school@example.com',
+      art_form: 'Gond',
+      date: '2026-12-01',
+      headcount: 40,
+      location: 'Auditorium',
+    });
+
+    expect(apiPost).toHaveBeenCalledWith('/bookings/school', {
+      school_email: 'school@example.com',
+      art_form: 'Gond',
+      date: '2026-12-01',
+      headcount: 40,
+      location: 'Auditorium',
+    }, {});
+    expect(result.isError).toBeUndefined();
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.booking.status).toBe('no_artist_available_pending_admin');
+    expect(parsed.booking.gross_amount).toBe(2000);
+  });
+
+  test('create_school_booking maps 404 to SCHOOL_NOT_FOUND', async () => {
+    apiPost.mockRejectedValueOnce({
+      error: 'School not found — upload via admin CSV first',
+      status: 404,
+    });
+
+    const result = await handleBookingToolCall('create_school_booking', {
+      school_email: 'missing@example.com',
+      art_form: 'Gond',
+      date: '2026-12-01',
+      headcount: 10,
+    });
+
+    expect(result.isError).toBe(true);
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.code).toBe('SCHOOL_NOT_FOUND');
+    expect(parsed.status).toBe(404);
+  });
+
+  test('create_school_booking rejects invalid date/email/headcount before the API', async () => {
+    const result = await handleBookingToolCall('create_school_booking', {
+      school_email: 'not-an-email',
+      art_form: 'Gond',
+      date: '12/01/2026',
+      headcount: 0,
+    });
+    expect(result.isError).toBe(true);
+    expect(apiPost).not.toHaveBeenCalled();
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.code).toBe('VALIDATION_ERROR');
+    expect(parsed.details.map((d) => d.field).sort()).toEqual([
+      'date',
+      'headcount',
+      'school_email',
+    ]);
   });
 });

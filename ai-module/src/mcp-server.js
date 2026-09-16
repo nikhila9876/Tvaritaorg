@@ -18,6 +18,7 @@ import { discoveryTools, handleDiscoveryToolCall } from './tools/discovery.js';
 import { authTools, handleAuthToolCall } from './tools/auth.js';
 import { bookingTools, handleBookingToolCall } from './tools/booking.js';
 import { paymentTools, handlePaymentToolCall } from './tools/payments.js';
+import { feedbackTools, handleFeedbackToolCall } from './tools/feedback.js';
 import { logToolCall, logToolResult } from './logger.js';
 import { summarizeMcpResult } from './mcp-result.js';
 
@@ -25,7 +26,7 @@ import { summarizeMcpResult } from './mcp-result.js';
 validateConfig();
 
 // Combine all tools
-const ALL_TOOLS = [...discoveryTools, ...authTools, ...bookingTools, ...paymentTools];
+const ALL_TOOLS = [...discoveryTools, ...authTools, ...bookingTools, ...paymentTools, ...feedbackTools];
 
 // Initialize the MCP Server
 const server = new Server(
@@ -63,6 +64,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       result = await handleBookingToolCall(name, args);
     } else if (paymentTools.some((t) => t.name === name)) {
       result = await handlePaymentToolCall(name, args);
+    } else if (feedbackTools.some((t) => t.name === name)) {
+      result = await handleFeedbackToolCall(name, args);
     }
   } catch (err) {
     logToolResult(name, {

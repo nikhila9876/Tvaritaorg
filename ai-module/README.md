@@ -16,7 +16,8 @@ AI/chatbot layer for the **Tvarita Arts Platform** — an MCP server wrapping th
 │  │  ├── discovery (5 public endpoints)    │ │
 │  │  ├── auth (OTP request/verify)         │ │
 │  │  ├── booking (individual/school/corp)  │ │
-│  │  └── payments (create + status)        │ │
+│  │  ├── payments (create + status)        │ │
+│  │  └── feedback (submit + public list)   │ │
 │  └────────────────────────────────────────┘ │
 │                 │                            │
 │           api-client.js                      │
@@ -77,6 +78,8 @@ npm test
 | `create_corporate_booking` | POST | `/api/bookings/corporate` |
 | `create_payment` | POST | `/api/payments/create` |
 | `get_payment_status` | GET | `/api/payments/{payment_id}/status` |
+| `submit_feedback` | POST | `/api/feedback` |
+| `get_artist_feedback` | GET | `/api/artists/{artist_id}/feedback` |
 
 ## Project Structure
 
@@ -94,7 +97,8 @@ ai-module/
 │   │   ├── discovery.js     # public discovery tools
 │   │   ├── auth.js          # guest OTP auth tools
 │   │   ├── booking.js       # individual, school, corporate booking tools
-│   │   └── payments.js      # payment create + status tools
+│   │   ├── payments.js      # payment create + status tools
+│   │   └── feedback.js      # feedback submit + public list
 │   ├── mcp-server.js        # MCP server (registers all tools)
 │   ├── agent.js             # conversational agent loop
 │   ├── logger.js            # stderr logging with secret redaction
@@ -104,5 +108,6 @@ ai-module/
     ├── discovery.test.js    # discovery tools tests
     ├── auth.test.js         # auth tools tests
     ├── booking.test.js      # booking tool tests
-    └── payments.test.js     # payment tool tests
+    ├── payments.test.js     # payment tool tests
+    └── feedback.test.js     # feedback tool tests
 ```

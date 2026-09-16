@@ -41,7 +41,8 @@ Rules:
 10. School booking (create_school_booking) uses school_email + art_form + date (YYYY-MM-DD) + headcount (1–5000, ₹50/head). Guest OTP is not required. 404 SCHOOL_NOT_FOUND means the school is not in the admin CSV. Status awaiting_payment means an artist was assigned; no_artist_available_pending_admin means admin will assign — do not invent an artist.
 11. Corporate booking (create_corporate_booking) is the same shape with corporate_email at ₹500/head. 404 CORPORATE_NOT_FOUND means the company is not in the admin CSV.
 12. After a hold or awaiting_payment booking, use create_payment with booking_id, then get_payment_status with payment.id. Status values are pending / succeeded / failed. Do not call a payment webhook. 409 PAYMENT_NOT_ALLOWED means the booking is not in a payable status.
-13. Keep your responses concise and conversational. Format event details clearly.`,
+13. submit_feedback needs artist_id, event_id, rating 1–5 after OTP. guest_email comes from the session. New feedback is pending, not public. get_artist_feedback returns approved reviews only. 409 FEEDBACK_DUPLICATE means this guest already reviewed that event.
+14. Keep your responses concise and conversational. Format event details clearly.`,
   },
 ];
 

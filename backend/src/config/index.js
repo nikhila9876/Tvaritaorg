@@ -17,10 +17,14 @@ export const config = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   internalApiKey: process.env.INTERNAL_API_KEY || 'dev-internal-api-key',
   passwordTokenTtlHours: Number(process.env.PASSWORD_TOKEN_TTL_HOURS || 72),
-  brevo: {
-    apiKey: process.env.BREVO_API_KEY || '',
-    senderEmail: process.env.BREVO_SENDER_EMAIL || 'no-reply@tvaritacollective.com',
-    senderName: process.env.BREVO_SENDER_NAME || 'Tvarita',
+  smtp: {
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: Number(process.env.SMTP_PORT || 587),
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+    from: process.env.SMTP_FROM || 'Tvarita <no-reply@tvarita.org>',
+    /** "console" logs emails; "smtp" sends via nodemailer */
+    emailMode: process.env.EMAIL_MODE || 'console',
   },
   artistShareRate: ARTIST_SHARE_RATE,
   bookingRates: BOOKING_RATES,

@@ -21,7 +21,7 @@ CORPORATE SIGNUP (/corporate/signup)
   (Name, Email, ORG_ID, Company Name)
         ↓
 EMAIL OTP VERIFICATION (/corporate/verify-otp)
-  (Brevo server-side proxy contract)
+  (SMTP / console email contract)
         ↓
 CORPORATE ACCOUNT CREATED & AUTHENTICATED
         ↓
@@ -77,10 +77,11 @@ CORPORATE DASHBOARD (/corporate/dashboard)
 
 ---
 
-## ✉️ Email OTP Verification (Brevo)
+## ✉️ Email OTP Verification (nodemailer SMTP)
 
-- **Backend-only Brevo Key**: `BREVO_API_KEY` is never exposed to the browser or committed to git.
-- **Frontend Calls**: Proxies through backend `/auth/send-otp` and `/auth/verify-otp`.
+- **Backend-only SMTP secrets**: `SMTP_USER` / `SMTP_PASS` stay on the server — never in frontend `.env`.
+- **Dev mode**: set `EMAIL_MODE=console` to log OTP/invite emails to the terminal.
+- **Frontend Calls**: Proxies through backend auth OTP endpoints.
 - **Resilience**: Development code `482910` or `123456` provided for offline/test environments.
 
 ---

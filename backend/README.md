@@ -8,7 +8,7 @@ Artist auth & self-service, admin operations, feedback/moderation, and CSV onboa
 - **Prisma + MongoDB** (replica set required for `$transaction`)
 - **JWT** auth (artist + admin roles)
 - **bcryptjs** password hashing
-- **Brevo** email (optional; console fallback)
+- **nodemailer** SMTP (`EMAIL_MODE=console` logs emails; `smtp` sends)
 - **node-cron** for 72h feedback auto-approve
 - **Zod** validation, **Jest + Supertest** tests
 

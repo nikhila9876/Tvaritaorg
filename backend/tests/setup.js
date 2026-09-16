@@ -6,7 +6,8 @@ process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.INTERNAL_API_KEY = 'test-internal-key';
 process.env.PASSWORD_TOKEN_TTL_HOURS = '72';
-process.env.BREVO_API_KEY = '';
+process.env.EMAIL_MODE = 'console';
+process.env.SMTP_USER = '';
 
 /** @type {import('mongodb-memory-server').MongoMemoryReplSet | undefined} */
 let replSet;

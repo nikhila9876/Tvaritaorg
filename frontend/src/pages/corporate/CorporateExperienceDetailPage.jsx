@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
-  Calendar, Clock, MapPin, Users, CheckCircle2, ArrowRight,
-  ShieldCheck, Award, Share2, Heart, ChevronLeft, Building2,
-  FileText, Mail, Phone, Sparkles, AlertCircle,
+  MapPin, CheckCircle2, ArrowRight,
+  ShieldCheck, Share2, ChevronLeft, Building2,
+  FileText, AlertCircle,
 } from 'lucide-react';
 import PublicLayout from '../../components/layout/PublicLayout';
 import LoadingSkeleton from '../../components/shared/LoadingSkeleton';

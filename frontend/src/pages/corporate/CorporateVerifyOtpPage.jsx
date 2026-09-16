@@ -40,17 +40,15 @@ export default function CorporateVerifyOtpPage() {
   const [statusMessage, setStatusMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
-  const [isExpired, setIsExpired] = useState(false);
   const [attempts, setAttempts] = useState(0);
+
+  const isExpired = timer <= 0;
 
   // Countdown timer
   useEffect(() => {
-    if (timer <= 0) {
-      setIsExpired(true);
-      return;
-    }
+    if (timer <= 0) return;
     const interval = setInterval(() => {
-      setTimer((prev) => prev - 1);
+      setTimer((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
     return () => clearInterval(interval);
   }, [timer]);
@@ -143,7 +141,6 @@ export default function CorporateVerifyOtpPage() {
     try {
       await corporateApi.sendOtp({ email: signupData.email });
       setTimer(60);
-      setIsExpired(false);
       setAttempts(0);
       setDigits(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();

@@ -1,10 +1,12 @@
+import nodemailer from 'nodemailer';
 import { prisma } from '../config/db.js';
 import { config } from '../config/index.js';
 import { AppError } from '../utils/helpers.js';
 
 /**
  * POST /internal/notifications/send — owned by Person B.
- * Dispatches email/SMS; falls back to console + NotificationLog when Brevo is unset.
+ * Dispatches email/SMS via nodemailer SMTP, or console fallback when
+ * EMAIL_MODE=console / SMTP is unset.
  */
 export async function sendNotification({ channel = 'email', to, template, data = {} }) {
   if (!to || !template) {
@@ -39,42 +41,52 @@ export async function sendNotification({ channel = 'email', to, template, data =
   return { id: log.id, status, channel, to, template };
 }
 
-async function dispatchEmail(to, template, data) {
-  const subject = subjectForTemplate(template);
-  const body = bodyForTemplate(template, data);
+let transporter;
 
-  if (!config.brevo.apiKey) {
-    console.log(`[notification:email] to=${to} template=${template}\n${subject}\n${body}`);
-    return;
+function getTransporter() {
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      host: config.smtp.host,
+      port: config.smtp.port,
+      secure: config.smtp.port === 465,
+      auth: {
+        user: config.smtp.user,
+        pass: config.smtp.pass,
+      },
+    });
+  }
+  return transporter;
+}
+
+async function sendEmail({ to, subject, html }) {
+  if (config.smtp.emailMode === 'console' || !config.smtp.user) {
+    console.log(`[email:console-fallback] to=${to} subject="${subject}"`);
+    console.log(html);
+    return { success: true, mode: 'console' };
   }
 
-  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-    method: 'POST',
-    headers: {
-      'api-key': config.brevo.apiKey,
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
-    body: JSON.stringify({
-      sender: {
-        email: config.brevo.senderEmail,
-        name: config.brevo.senderName,
-      },
-      to: [{ email: to }],
-      subject,
-      htmlContent: `<pre>${escapeHtml(body)}</pre>`,
-      textContent: body,
-    }),
+  const info = await getTransporter().sendMail({
+    from: config.smtp.from,
+    to,
+    subject,
+    html,
   });
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new AppError(`Brevo send failed: ${text}`, 502);
+  return { success: true, mode: 'smtp', messageId: info.messageId };
+}
+
+async function dispatchEmail(to, template, data) {
+  const subject = subjectForTemplate(template);
+  const html = htmlForTemplate(template, data);
+
+  const result = await sendEmail({ to, subject, html });
+  if (result.mode === 'smtp') {
+    console.log(`[email:smtp] to=${to} template=${template} messageId=${result.messageId}`);
   }
 }
 
 async function dispatchSms(to, template, data) {
-  const body = bodyForTemplate(template, data);
+  const body = textForTemplate(template, data);
   console.log(`[notification:sms] to=${to} template=${template}\n${body}`);
 }
 
@@ -101,7 +113,8 @@ function subjectForTemplate(template) {
   }
 }
 
-function bodyForTemplate(template, data) {
+/** Plain-text body (SMS + HTML fallback content). */
+function textForTemplate(template, data) {
   switch (template) {
     case 'artist_set_password':
     case 'artist_invite':
@@ -150,6 +163,24 @@ function bodyForTemplate(template, data) {
     default:
       return JSON.stringify(data, null, 2);
   }
+}
+
+/** HTML email bodies — nodemailer has no Brevo template IDs. */
+function htmlForTemplate(template, data) {
+  const text = textForTemplate(template, data);
+  const paragraphs = text
+    .split('\n')
+    .map((line) => (line.trim() === '' ? '<br/>' : `<p style="margin:0 0 8px;">${escapeHtml(line)}</p>`))
+    .join('');
+
+  return `<!DOCTYPE html>
+<html>
+  <body style="font-family: Arial, sans-serif; color: #222; line-height: 1.5;">
+    ${paragraphs}
+    <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
+    <p style="font-size:12px;color:#888;">Tvarita Arts Collective</p>
+  </body>
+</html>`;
 }
 
 function escapeHtml(str) {

@@ -8,7 +8,8 @@ import { sendNotification } from '../notificationService.js';
 import { GUEST_SESSION_TTL, OTP_TTL_MINUTES } from '../../constants/pricing.js';
 
 function generateOtpCode() {
-  if (config.nodeEnv === 'test' || !config.brevo.apiKey) {
+  // Fixed OTP in test / console email mode for easy local verification
+  if (config.nodeEnv === 'test' || config.smtp.emailMode === 'console' || !config.smtp.user) {
     return process.env.GUEST_OTP_DEV_CODE || '482910';
   }
   return String(crypto.randomInt(100000, 999999));
@@ -54,8 +55,9 @@ export async function requestGuestOtp({ email, name }) {
   return {
     email: normalized,
     expires_in_seconds: OTP_TTL_MINUTES * 60,
-    // Dev/test convenience only — never returned when Brevo is configured in production
-    ...(config.nodeEnv !== 'production' && !config.brevo.apiKey
+    // Dev/test convenience — never returned when SMTP is actively sending in production
+    ...(config.nodeEnv !== 'production' &&
+    (config.smtp.emailMode === 'console' || !config.smtp.user)
       ? { dev_otp: code }
       : {}),
   };

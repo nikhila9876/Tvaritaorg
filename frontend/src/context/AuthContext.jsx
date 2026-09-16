@@ -44,13 +44,19 @@ export function AuthProvider({ children }) {
       try {
         const user = JSON.parse(userStr);
         dispatch({ type: 'LOGIN_SUCCESS', payload: { user, token } });
-        // Verify token is still valid
+        // Attempt token verification if backend is live; do not log out on network failure
         auth.me().then((res) => {
-          dispatch({ type: 'UPDATE_USER', payload: res.data.user || res.data });
-        }).catch(() => {
-          localStorage.removeItem('tvarita_token');
-          localStorage.removeItem('tvarita_user');
-          dispatch({ type: 'LOGOUT' });
+          if (res?.data) {
+            const updated = res.data.user || res.data;
+            dispatch({ type: 'UPDATE_USER', payload: updated });
+          }
+        }).catch((err) => {
+          if (err.response?.status === 401) {
+            localStorage.removeItem('tvarita_token');
+            localStorage.removeItem('tvarita_user');
+            dispatch({ type: 'LOGOUT' });
+          }
+          // If offline / network error, retain local session
         });
       } catch {
         dispatch({ type: 'SET_LOADING', payload: false });
@@ -74,6 +80,13 @@ export function AuthProvider({ children }) {
       dispatch({ type: 'SET_ERROR', payload: message });
       return { success: false, error: message };
     }
+  }, []);
+
+  const setAuthenticatedUser = useCallback((user, token) => {
+    const safeToken = token || `tvarita_corp_${Date.now()}`;
+    localStorage.setItem('tvarita_token', safeToken);
+    localStorage.setItem('tvarita_user', JSON.stringify(user));
+    dispatch({ type: 'LOGIN_SUCCESS', payload: { user, token: safeToken } });
   }, []);
 
   const register = useCallback(async (data) => {
@@ -122,6 +135,7 @@ export function AuthProvider({ children }) {
     ...state,
     isAuthenticated: !!state.token && !state.loading,
     login,
+    setAuthenticatedUser,
     register,
     logout,
     updateUser,

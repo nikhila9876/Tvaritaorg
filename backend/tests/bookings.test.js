@@ -135,6 +135,58 @@ describe('Bookings concurrency', () => {
     }
   });
 
+  test('two concurrent school bookings cannot claim the same artist+date', async () => {
+    await prisma.artist.create({
+      data: {
+        email: 'school-artist@example.com',
+        name: 'School Artist',
+        artForm: 'Warli',
+        passwordHash: await hashPassword('x'),
+        status: 'active',
+        passwordSet: true,
+        ratingAvg: 4.5,
+        ratingCount: 3,
+      },
+    });
+    await prisma.school.create({
+      data: { email: 'school-a@example.com', name: 'School A' },
+    });
+    await prisma.school.create({
+      data: { email: 'school-b@example.com', name: 'School B' },
+    });
+
+    const body1 = {
+      school_email: 'school-a@example.com',
+      art_form: 'Warli',
+      date: '2026-11-15',
+      headcount: 30,
+    };
+    const body2 = {
+      school_email: 'school-b@example.com',
+      art_form: 'Warli',
+      date: '2026-11-15',
+      headcount: 25,
+    };
+
+    const [s1, s2] = await Promise.all([
+      request(app).post('/api/bookings/school').send(body1),
+      request(app).post('/api/bookings/school').send(body2),
+    ]);
+
+    expect([s1.status, s2.status].every((s) => s === 201 || s === 409)).toBe(true);
+
+    const bodies = [s1, s2].filter((r) => r.status === 201).map((r) => r.body.booking);
+    const assigned = bodies.filter(
+      (b) => b.status === 'awaiting_payment' && b.artist_id,
+    );
+    expect(assigned.length).toBeLessThanOrEqual(1);
+
+    const holds = await prisma.artistDateHold.findMany({
+      where: { date: '2026-11-15' },
+    });
+    expect(holds.length).toBeLessThanOrEqual(1);
+  });
+
   test('school with no available artists creates pending-admin booking without event', async () => {
     await prisma.school.create({
       data: { email: 'school@example.com', name: 'Demo School' },

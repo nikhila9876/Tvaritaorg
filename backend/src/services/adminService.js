@@ -127,8 +127,10 @@ function summarizeImport(results) {
   };
 }
 
-export async function listBookings() {
+export async function listBookings(status) {
+  const where = status ? { status } : {};
   const bookings = await prisma.booking.findMany({
+    where,
     include: {
       event: true,
       artist: { select: { id: true, name: true, email: true, artForm: true } },
@@ -146,6 +148,8 @@ export async function listBookings() {
     booking_type: b.bookingType,
     status: b.status,
     gross_amount: b.grossAmount,
+    hold_expires_at: b.holdExpiresAt ?? null,
+    payment_window_expires_at: b.paymentWindowExpiresAt ?? null,
     event: b.event
       ? {
           id: b.event.id,
@@ -181,7 +185,15 @@ export async function assignArtistToEvent(eventId, artistId) {
   });
 
   if (!booking) {
-    throw new AppError('No booking found for this event to assign', 404);
+    // Pending-admin bookings often have eventId=null — cannot be reached via this route.
+    throw new AppError(
+      'No booking found for this event. For pending-admin bookings without an Event, use POST /api/admin/bookings/{booking_id}/assign-artist',
+      404,
+      {
+        hint: 'booking_assign_path',
+        path: '/api/admin/bookings/{booking_id}/assign-artist',
+      },
+    );
   }
 
   // Pending-admin / awaiting payment flow — Person A owns payment window + notify

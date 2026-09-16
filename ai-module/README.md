@@ -76,6 +76,7 @@ npm test
 | `create_individual_booking` | POST | `/api/bookings/individual` |
 | `create_school_booking` | POST | `/api/bookings/school` |
 | `create_corporate_booking` | POST | `/api/bookings/corporate` |
+| `get_booking_status` | GET | `/api/bookings/{booking_id}/status` |
 | `create_payment` | POST | `/api/payments/create` |
 | `get_payment_status` | GET | `/api/payments/{payment_id}/status` |
 | `submit_feedback` | POST | `/api/feedback` |

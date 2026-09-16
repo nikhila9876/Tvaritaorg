@@ -38,9 +38,14 @@
  *   201 { booking } status awaiting_payment | no_artist_available_pending_admin
  *   404 if corporate email is not in admin CSV
  *   Rate 500/head. Highest rating_avg assigned first. JWT not required.
+ *
+ * Status poll (Person A getBookingStatus):
+ *   GET /api/bookings/:booking_id/status
+ *   200 { booking_id, status, hold_expires_at, payment_window_expires_at }
+ *   404 Booking not found. No auth.
  */
 
-import { apiPost } from '../api-client.js';
+import { apiGet, apiPost } from '../api-client.js';
 import { sessionStore, DEFAULT_CONVERSATION_ID } from '../session-store.js';
 import { mcpOk, mcpError, mcpFromCaught } from '../mcp-result.js';
 
@@ -156,6 +161,24 @@ export const bookingTools = [
         },
       },
       required: ['corporate_email', 'art_form', 'date', 'headcount'],
+    },
+  },
+  {
+    name: 'get_booking_status',
+    description:
+      'Poll a booking by id. Returns { booking_id, status, hold_expires_at, payment_window_expires_at }. ' +
+      'Statuses: hold (individual 10-minute slot lock), awaiting_payment (48h window for school/corporate), ' +
+      'confirmed, cancelled, completed, pending, no_artist_available_pending_admin. ' +
+      '404 means unknown booking_id. No OTP required.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        booking_id: {
+          type: 'string',
+          description: 'The booking id from a create_*_booking tool.',
+        },
+      },
+      required: ['booking_id'],
     },
   },
 ];
@@ -291,6 +314,9 @@ export async function handleBookingToolCall(name, args) {
   }
   if (name === 'create_corporate_booking') {
     return handleCorporateBooking(args);
+  }
+  if (name === 'get_booking_status') {
+    return handleGetBookingStatus(args);
   }
   return null;
 }
@@ -440,6 +466,28 @@ async function handleCorporateBooking(args) {
             'No artist could be locked for that date. The booking may be pending admin assignment — tell the company and do not invent an artist.',
         },
       );
+    }
+    return caught;
+  }
+}
+
+async function handleGetBookingStatus(args) {
+  const bookingId = typeof args?.booking_id === 'string' ? args.booking_id.trim() : '';
+  if (!bookingId) {
+    return mcpError('booking_id is required.', { code: 'VALIDATION_ERROR', field: 'booking_id' });
+  }
+
+  try {
+    const result = await apiGet(`/bookings/${bookingId}/status`, optionalAuthOptions());
+    return mcpOk(result);
+  } catch (error) {
+    const caught = mcpFromCaught(error);
+    if (error?.status === 404) {
+      const parsed = JSON.parse(caught.content[0].text);
+      return mcpError(parsed.error || 'Booking not found', {
+        ...parsed,
+        code: 'BOOKING_NOT_FOUND',
+      });
     }
     return caught;
   }

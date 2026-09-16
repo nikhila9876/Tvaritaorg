@@ -8,6 +8,7 @@ import { jest } from '@jest/globals';
 
 // Mock api-client and session-store
 jest.unstable_mockModule('../src/api-client.js', () => ({
+  apiGet: jest.fn(),
   apiPost: jest.fn(),
 }));
 
@@ -26,7 +27,7 @@ jest.unstable_mockModule('../src/session-store.js', () => {
   };
 });
 
-const { apiPost } = await import('../src/api-client.js');
+const { apiGet, apiPost } = await import('../src/api-client.js');
 const { sessionStore, DEFAULT_CONVERSATION_ID } = await import('../src/session-store.js');
 const { bookingTools, handleBookingToolCall } = await import('../src/tools/booking.js');
 
@@ -36,11 +37,12 @@ describe('bookingTools', () => {
     sessionStore.clearSession(DEFAULT_CONVERSATION_ID);
   });
 
-  test('registers individual, school, and corporate booking tools', () => {
+  test('registers individual, school, corporate, and status booking tools', () => {
     expect(bookingTools.map((t) => t.name)).toEqual([
       'create_individual_booking',
       'create_school_booking',
       'create_corporate_booking',
+      'get_booking_status',
     ]);
   });
 
@@ -260,5 +262,36 @@ describe('bookingTools', () => {
     const parsed = JSON.parse(result.content[0].text);
     expect(parsed.code).toBe('CORPORATE_NOT_FOUND');
     expect(parsed.status).toBe(404);
+  });
+
+  test('get_booking_status GETs Person A status payload', async () => {
+    apiGet.mockResolvedValueOnce({
+      booking_id: 'bk_1',
+      status: 'hold',
+      hold_expires_at: '2026-09-16T10:10:00.000Z',
+      payment_window_expires_at: null,
+    });
+
+    const result = await handleBookingToolCall('get_booking_status', { booking_id: 'bk_1' });
+    expect(apiGet).toHaveBeenCalledWith('/bookings/bk_1/status', {});
+    expect(result.isError).toBeUndefined();
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.status).toBe('hold');
+    expect(parsed.booking_id).toBe('bk_1');
+  });
+
+  test('get_booking_status maps 404 to BOOKING_NOT_FOUND', async () => {
+    apiGet.mockRejectedValueOnce({ error: 'Booking not found', status: 404 });
+    const result = await handleBookingToolCall('get_booking_status', { booking_id: 'missing' });
+    expect(result.isError).toBe(true);
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.code).toBe('BOOKING_NOT_FOUND');
+  });
+
+  test('get_booking_status requires booking_id', async () => {
+    const result = await handleBookingToolCall('get_booking_status', {});
+    expect(result.isError).toBe(true);
+    expect(apiGet).not.toHaveBeenCalled();
+    expect(JSON.parse(result.content[0].text).code).toBe('VALIDATION_ERROR');
   });
 });

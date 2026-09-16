@@ -661,3 +661,30 @@ tbody tr:hover {
 .min-h-screen { min-height: 100vh; }
 .object-cover { object-fit: cover; }
 .object-center { object-position: center; }
+
+/* ─── Spin Animation ─────────────────────────────────────────────── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+/* ─── Print Styles for Receipts ──────────────────────────────────── */
+@media print {
+  header, footer, nav, .hide-print, .dashboard-sidebar {
+    display: none !important;
+  }
+  body, main {
+    background: #fff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+  }
+}
+

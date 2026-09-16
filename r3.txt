@@ -1,0 +1,1068 @@
+# TVARITA CORPORATE DASHBOARD — CONTINUE FROM CURRENT PROJECT STATE
+
+## IMPORTANT — CONTINUE, DO NOT RESTART
+
+Stop working on the previous feature/task.
+
+First inspect the existing project and **continue exactly from where you previously stopped**.
+
+Do NOT:
+
+* Restart the project
+* Rebuild the entire frontend
+* Delete existing working features
+* Overwrite existing components unnecessarily
+* Redesign unrelated user roles
+* Create duplicate routes
+* Replace working authentication/API logic
+
+Your task from now onwards is to implement **ONLY the Corporate user journey** for the Tvarita platform.
+
+Repository:
+
+`https://github.com/nikhila9876/Tvaritaorg.git`
+
+---
+
+# 1. FIRST INSPECT THE EXISTING PROJECT
+
+Before making changes, read and understand:
+
+* Existing frontend structure
+* Existing routes
+* Existing components
+* Existing authentication
+* Existing role-based routing
+* Existing API services
+* Existing backend API contracts
+* Existing environment variables
+* Existing Corporate pages
+* Existing CSS/design system
+* Existing reusable cards/forms/modals
+* Existing event/experience functionality
+
+Determine **exactly where the previous implementation stopped**.
+
+Then continue from that point.
+
+Reuse existing components and APIs whenever possible.
+
+---
+
+# 2. CORPORATE USER JOURNEY
+
+Implement this complete Corporate flow:
+
+```text
+PUBLIC TVARITA WEBSITE
+        ↓
+DISCOVER
+        ↓
+CORPORATE EXPERIENCES
+        ↓
+EVENT / EXPERIENCE DETAILS
+        ↓
+CORPORATE SIGNUP
+        ↓
+Name
+Email
+ORG_ID
+Company Name
+        ↓
+EMAIL OTP VERIFICATION
+        ↓
+CORPORATE ACCOUNT CREATED
+        ↓
+CORPORATE DASHBOARD
+        ↓
+PREVIEW EVENTS
+        ↓
+SELECT EVENT
+        ↓
+EVENT DETAILS
+        ↓
+REGISTER
+        ↓
+RAZORPAY PAYMENT
+        ↓
+PAYMENT VERIFICATION
+        ↓
+REGISTRATION CONFIRMED
+        ↓
+CONFIRMATION EMAIL
+        ↓
+CORPORATE DASHBOARD
+```
+
+The final user experience must be simple and smooth.
+
+---
+
+# 3. CORPORATE EVENT DISCOVERY
+
+Create/complete:
+
+`/corporate/experiences`
+
+Corporate users should be able to discover available Tvarita experiences.
+
+Each experience should show:
+
+* Event image
+* Event name
+* Short description
+* Art form
+* Artist
+* Date
+* Time
+* Duration
+* Location
+* Price
+* Availability
+* `View Details`
+* `Register`
+
+Examples:
+
+* Traditional Art Workshop
+* Folk Performance
+* Cultural Experience
+* Artist Interaction
+* Corporate Team Experience
+* Traditional Craft Workshop
+* Cultural Learning Session
+
+If the backend already provides event data, use the real API.
+
+Do NOT permanently hard-code event data when an API exists.
+
+---
+
+# 4. EVENT DETAILS
+
+Route:
+
+`/corporate/experiences/:id`
+
+Create a complete event/experience detail page.
+
+Show:
+
+### Event Information
+
+* Event name
+* Cover image
+* Description
+* Art form
+* Artist
+* Date
+* Start time
+* End time
+* Duration
+* Venue
+* City
+* Location
+* Capacity
+* Available seats
+* Price
+* What's included
+* Requirements
+* Organizer details
+
+### Cultural Story
+
+Include:
+
+* About the art form
+* About the artist
+* Cultural significance
+* Short story/context
+
+Keep this section visual and editorial.
+
+### CTA
+
+`Register for this Experience`
+
+If the Corporate user is not authenticated:
+
+→ redirect to Corporate Signup/Login.
+
+If already authenticated:
+
+→ continue to registration.
+
+---
+
+# 5. CORPORATE SIGNUP
+
+Route:
+
+`/corporate/signup`
+
+Create a simple Corporate signup form.
+
+Required fields:
+
+* Full Name
+* Email Address
+* ORG_ID
+* Company Name
+
+Do NOT add unnecessary fields.
+
+Validate:
+
+* Name required
+* Valid email
+* ORG_ID required
+* Company name required
+
+CTA:
+
+`Continue`
+
+After submission:
+
+→ send email OTP.
+
+---
+
+# 6. EMAIL OTP VERIFICATION
+
+Route:
+
+`/corporate/verify-otp`
+
+Display:
+
+```text
+Verify your email
+
+We've sent a verification code to:
+
+company@email.com
+
+_ _ _ _ _ _
+
+[ Verify ]
+
+Resend OTP
+Change Email
+```
+
+Implement:
+
+* OTP countdown
+* Resend cooldown
+* Invalid OTP state
+* Expired OTP state
+* Too many attempts
+* Successful verification
+* Network/API error
+
+After successful OTP:
+
+→ create/authenticate Corporate account
+
+→ redirect to:
+
+`/corporate/dashboard`
+
+---
+
+# 7. BREVO OTP
+
+Use Brevo for email OTP.
+
+IMPORTANT:
+
+The frontend must NEVER directly call Brevo.
+
+Correct architecture:
+
+```text
+React Frontend
+      ↓
+Backend API
+      ↓
+Brevo
+      ↓
+Corporate Email
+```
+
+Use the existing backend endpoints if available.
+
+Expected functionality:
+
+```text
+POST /auth/send-otp
+POST /auth/verify-otp
+```
+
+Use the actual project endpoints if they are different.
+
+Never expose:
+
+```text
+BREVO_API_KEY
+```
+
+inside frontend code.
+
+Never commit the Brevo API key.
+
+---
+
+# 8. CORPORATE DASHBOARD
+
+Route:
+
+`/corporate/dashboard`
+
+After successful OTP verification, show the Corporate dashboard.
+
+The dashboard should remain simple and useful.
+
+Show:
+
+### Welcome
+
+```text
+Welcome, [Corporate User]
+
+[Company Name]
+```
+
+### Upcoming Experience
+
+Show the next registered event:
+
+* Event image
+* Event name
+* Date
+* Time
+* Location
+* Registration status
+
+CTA:
+
+`View Details`
+
+### My Registrations
+
+Show:
+
+* Event
+* Date
+* Location
+* Registration status
+* Payment status
+
+### Payments
+
+Show:
+
+* Event
+* Amount
+* Payment date
+* Payment status
+* Transaction/reference ID
+* Receipt
+
+### Quick Actions
+
+```text
+Explore Experiences
+My Registrations
+Payments
+Profile
+Notifications
+```
+
+---
+
+# 9. CORPORATE EVENT REGISTRATION
+
+When Corporate user clicks:
+
+`Register`
+
+open the registration flow.
+
+Show event summary:
+
+```text
+Event
+Event Name
+
+Date
+Date
+
+Time
+Start – End
+
+Location
+Venue
+
+Participants
+Number
+
+Total Amount
+₹XXXX
+```
+
+Registration information:
+
+* Company Name
+* Contact Person
+* Email
+* ORG_ID
+* Number of Participants
+* Special Requirements
+* Notes
+
+CTA:
+
+`Proceed to Payment`
+
+---
+
+# 10. RAZORPAY PAYMENT
+
+Use **Razorpay** for Corporate event registration payments.
+
+Frontend environment:
+
+```env
+VITE_API_BASE_URL=http://localhost:5000/api
+VITE_RAZORPAY_KEY_ID=rzp_test_xxxxxxxxx
+```
+
+Only the public Razorpay Key ID can be exposed to frontend.
+
+NEVER expose:
+
+```env
+RAZORPAY_KEY_SECRET
+RAZORPAY_WEBHOOK_SECRET
+```
+
+in frontend.
+
+These remain backend-only.
+
+Payment flow:
+
+```text
+Registration
+     ↓
+Create Razorpay Order
+     ↓
+Backend
+     ↓
+Razorpay Checkout
+     ↓
+Payment
+     ↓
+Payment Response
+     ↓
+Backend Verification
+     ↓
+Registration Confirmation
+```
+
+Do NOT mark registration confirmed simply because Razorpay returns success.
+
+The backend must verify the payment.
+
+After verification, fetch the final registration status from the backend.
+
+---
+
+# 11. PAYMENT STATES
+
+Implement proper states:
+
+### Preparing
+
+`Preparing secure payment...`
+
+### Processing
+
+`Processing your payment...`
+
+### Success
+
+`Payment successful. Confirming your registration...`
+
+### Failed
+
+`Payment failed. Your registration has not been confirmed.`
+
+Button:
+
+`Try Again`
+
+### Cancelled
+
+`Payment cancelled.`
+
+Button:
+
+`Pay Again`
+
+### Verification
+
+`We're verifying your payment. Please wait...`
+
+Never show a false registration confirmation.
+
+---
+
+# 12. REGISTRATION CONFIRMATION
+
+After successful backend payment verification:
+
+Show:
+
+```text
+✓ Registration Confirmed
+
+Event Name
+
+Date
+Time
+Location
+
+Company Name
+
+Participants
+
+Amount Paid
+
+Registration ID
+```
+
+Buttons:
+
+```text
+View Registration
+Download Receipt
+Back to Dashboard
+```
+
+---
+
+# 13. CONFIRMATION EMAIL
+
+After successful registration, the backend should send a confirmation email through the configured email service/Brevo.
+
+The email must contain:
+
+* Corporate/Company Name
+* Event Name
+* Date
+* Time
+* Location
+* Venue details
+* Registration ID
+* Number of participants
+* Payment amount
+* Payment status
+* Event instructions
+* Tvarita contact details
+
+Frontend should display:
+
+`Confirmation email sent to your registered email address.`
+
+The frontend must NOT send emails directly.
+
+---
+
+# 14. MY REGISTRATIONS
+
+Route:
+
+`/corporate/registrations`
+
+Show registration history.
+
+Tabs:
+
+```text
+Upcoming
+Completed
+Cancelled
+```
+
+Each registration:
+
+* Event image
+* Event name
+* Date
+* Time
+* Location
+* Registration ID
+* Participants
+* Payment status
+* Registration status
+
+CTA:
+
+`View Details`
+
+---
+
+# 15. REGISTRATION DETAILS
+
+Route:
+
+`/corporate/registrations/:id`
+
+Show:
+
+### Event
+
+* Event name
+* Description
+* Date
+* Time
+* Location
+* Artist
+* Art form
+
+### Registration
+
+* Registration ID
+* Company
+* Contact person
+* Email
+* ORG_ID
+* Participants
+* Registration status
+
+### Payment
+
+* Amount
+* Payment status
+* Payment reference
+* Payment date
+
+Actions:
+
+* Download receipt
+* View event
+* Contact Tvarita
+
+---
+
+# 16. CORPORATE PROFILE
+
+Route:
+
+`/corporate/profile`
+
+Show/edit:
+
+* Name
+* Email
+* ORG_ID
+* Company Name
+
+Show email status:
+
+```text
+Email
+
+✓ Verified
+```
+
+Do not allow users to accidentally modify verified identity fields if the backend does not support it.
+
+---
+
+# 17. CORPORATE NOTIFICATIONS
+
+Route:
+
+`/corporate/notifications`
+
+Show:
+
+* Registration confirmation
+* Payment confirmation
+* Event reminder
+* Event date/time changes
+* Venue changes
+* Cancellation
+* New Corporate experiences
+
+Support:
+
+* Read
+* Unread
+* Mark as read
+
+---
+
+# 18. EVENT REMINDERS
+
+If notification APIs already exist, display reminders such as:
+
+```text
+Your Tvarita experience is tomorrow.
+
+Traditional Art Workshop
+
+25 September
+10:00 AM
+
+Tvarita Cultural Centre
+
+[View Event]
+```
+
+Do not add unnecessary AI functionality.
+
+---
+
+# 19. UI DESIGN — MATCH THE TVARITA WEBSITE
+
+IMPORTANT:
+
+The Corporate pages must **look like they belong to the existing Tvarita website**.
+
+Use this website as the primary visual reference:
+
+`https://tvaritacollective.com/`
+
+Do NOT invent a completely different dashboard design.
+
+Study the existing website's:
+
+* Overall visual style
+* Page structure
+* Typography feel
+* Navigation style
+* Header/footer treatment
+* Spacing
+* Image usage
+* Section hierarchy
+* Button styling
+* Card styling
+* Content presentation
+* Cultural/editorial feel
+* Photography placement
+* White/light visual presentation
+* Natural/earthy visual accents
+
+The Corporate experience should feel like:
+
+**Tvarita website + Corporate booking functionality**
+
+NOT:
+
+**Generic SaaS dashboard + Tvarita logo**
+
+Keep the UI clean, elegant, cultural, image-focused and spacious.
+
+Event pages should feel like editorial cultural experiences rather than ordinary ecommerce/product pages.
+
+Corporate dashboard should remain functional but visually follow the same Tvarita design language.
+
+Do NOT add:
+
+* Generic admin-dashboard styling
+* Heavy dark UI
+* Neon colors
+* Excessive gradients
+* Excessive cards
+* Unnecessary animations
+* AI chat widgets
+* Unnecessary AI sections
+* Overly complicated charts
+
+Maintain the existing Tvarita visual identity throughout the complete Corporate flow.
+
+---
+
+# 20. RESPONSIVE DESIGN
+
+All Corporate pages must work properly on:
+
+* Desktop
+* Laptop
+* Tablet
+* Mobile
+
+Use the existing responsive architecture wherever available.
+
+On mobile, maintain the same Tvarita visual style while keeping forms, event details and payment flow easy to use.
+
+---
+
+# 21. API INTEGRATION
+
+Before creating new APIs, inspect the existing backend.
+
+Reuse existing endpoints.
+
+Corporate functionality should support:
+
+```text
+Corporate Signup
+Corporate Login
+Send OTP
+Verify OTP
+Get Corporate Profile
+
+Get Corporate Experiences
+Get Event Details
+
+Create Registration
+Get Registration
+Get My Registrations
+
+Create Razorpay Order
+Verify Payment
+Get Payment Status
+
+Get Notifications
+Mark Notification Read
+```
+
+If the actual backend endpoint names are different, use the existing backend contracts.
+
+Do not create duplicate APIs.
+
+---
+
+# 22. ERROR HANDLING
+
+Every Corporate screen must properly handle:
+
+* Loading
+* Empty state
+* API error
+* Network error
+* Unauthorized
+* Forbidden
+* Invalid form
+* Invalid OTP
+* Expired OTP
+* Event unavailable
+* Registration already exists
+* Event capacity full
+* Payment failure
+* Payment cancellation
+* Payment verification pending
+
+Never display a blank page.
+
+Use clear user-friendly messages.
+
+---
+
+# 23. API KEYS / ENVIRONMENT VARIABLES
+
+Frontend:
+
+```env
+VITE_API_BASE_URL=http://localhost:5000/api
+VITE_RAZORPAY_KEY_ID=rzp_test_xxxxxxxxx
+```
+
+Backend only:
+
+```env
+BREVO_API_KEY=xxxxxxxx
+RAZORPAY_KEY_SECRET=xxxxxxxx
+RAZORPAY_WEBHOOK_SECRET=xxxxxxxx
+JWT_SECRET=xxxxxxxx
+```
+
+Never put backend secrets into React.
+
+Never hard-code secrets.
+
+Never commit real API keys to GitHub.
+
+Use `.env.example` with placeholder values.
+
+---
+
+# 24. GITHUB WORKFLOW — FROM NOW ON
+
+Do NOT continue the old 50-commit / 20-PR requirement.
+
+From this point onward, create only **meaningful commits**.
+
+For each distinct Corporate feature:
+
+### 1. Create branch
+
+```text
+feature-corporate-<feature-name>
+```
+
+Examples:
+
+```text
+feature-corporate-discovery
+feature-corporate-signup
+feature-corporate-otp
+feature-corporate-dashboard
+feature-corporate-registration
+feature-corporate-payment
+feature-corporate-confirmation
+```
+
+### 2. Implement the feature.
+
+### 3. Test the feature.
+
+### 4. Create an atomic Conventional Commit.
+
+Examples:
+
+```text
+feat: add corporate experience discovery
+feat: add corporate signup
+feat: add corporate email OTP verification
+feat: add corporate dashboard
+feat: add corporate registration flow
+feat: integrate Razorpay corporate payments
+feat: add registration confirmation
+fix: handle corporate payment verification state
+```
+
+### 5. Push to:
+
+`https://github.com/nikhila9876/Tvaritaorg.git`
+
+### 6. Create only 3–5 meaningful PRs.
+
+Recommended grouping:
+
+**PR 1 — Corporate Discovery & Authentication**
+
+* Corporate experiences
+* Event details
+* Signup
+* OTP
+* Corporate routing
+
+**PR 2 — Corporate Dashboard & Registration**
+
+* Dashboard
+* My registrations
+* Registration form
+* Registration details
+* Profile
+* Notifications
+
+**PR 3 — Razorpay Payment**
+
+* Razorpay checkout
+* Payment states
+* Payment verification
+* Payment history
+
+**PR 4 — Registration Confirmation**
+
+* Confirmation page
+* Receipt
+* Registration ID
+* Confirmation email status
+
+**PR 5 — Final Corporate UI & Fixes**
+
+* Responsive improvements
+* Loading states
+* Empty states
+* Error handling
+* UI consistency fixes
+
+Do NOT create fake commits.
+
+Do NOT create duplicate commits.
+
+Do NOT create PRs only to increase the count.
+
+---
+
+# 25. IMPLEMENTATION ORDER
+
+Follow this order:
+
+```text
+1. Inspect existing project
+        ↓
+2. Corporate experience discovery
+        ↓
+3. Event details
+        ↓
+4. Corporate signup
+        ↓
+5. Email OTP
+        ↓
+6. Corporate dashboard
+        ↓
+7. Corporate registration
+        ↓
+8. Razorpay payment
+        ↓
+9. Payment verification
+        ↓
+10. Registration confirmation
+        ↓
+11. Confirmation email
+        ↓
+12. My registrations
+        ↓
+13. Registration details
+        ↓
+14. Corporate profile
+        ↓
+15. Notifications
+        ↓
+16. Responsive + error-state polish
+```
+
+---
+
+# START NOW
+
+Read the existing project first.
+
+Determine exactly where the previous implementation stopped.
+
+Continue from that point.
+
+Do NOT restart the project.
+
+Do NOT overwrite working code.
+
+Implement the Corporate flow step by step.
+
+Use the **existing Tvarita website at https://tvaritacollective.com/ as the visual/design reference** so the new Corporate pages look like a natural extension of the existing website.
+
+Use:
+
+**Brevo → Email OTP**
+
+**Razorpay → Payments**
+
+Keep secrets backend-only.
+
+Commit each meaningful feature from now onwards.
+
+Create only **3–5 meaningful PRs**.
+
+Test every feature before moving to the next.
+
+The final Corporate journey must work end-to-end:
+
+**Discover → Signup (Name + Email + ORG_ID + Company Name) → Email OTP → Preview Events → Event Details → Register → Razorpay Payment → Payment Verification → Registration Confirmation → Confirmation Email → Corporate Dashboard.**

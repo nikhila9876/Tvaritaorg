@@ -1,0 +1,204 @@
+// Person B schema — artists, admin, feedback, schools, corporates, timeslots, payouts.
+// Bookings/Events are shared: Person A owns writes; Person B reads for admin/artist views.
+// Production: change provider to "postgresql" and set DATABASE_URL accordingly.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  active
+  inactive
+}
+
+enum FeedbackStatus {
+  pending
+  approved
+  rejected
+}
+
+enum PayoutStatus {
+  pending
+  paid
+}
+
+enum BookingStatus {
+  pending
+  confirmed
+  cancelled
+  completed
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Artist {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  passwordHash  String
+  name          String
+  phone         String?
+  artForm       String
+  region        String?
+  bio           String?
+  status        UserStatus @default(active)
+  passwordSet   Boolean    @default(false)
+  ratingAvg     Float      @default(0)
+  ratingCount   Int        @default(0)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  passwordTokens PasswordToken[]
+  timeslots      TimeSlot[]
+  feedback       Feedback[]
+  payouts        Payout[]
+  bookings       Booking[]
+}
+
+model PasswordToken {
+  id        String   @id @default(cuid())
+  artistId  String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@index([artistId])
+}
+
+model School {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  phone     String?
+  city      String?
+  contact   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Corporate {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String
+  orgId       String?
+  companyName String
+  phone       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TimeSlot {
+  id        String   @id @default(cuid())
+  artistId  String
+  date      String
+  startTime String
+  endTime   String
+  available Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@unique([artistId, date, startTime, endTime])
+  @@index([artistId, date])
+}
+
+model Feedback {
+  id         String         @id @default(cuid())
+  artistId   String
+  eventId    String
+  guestEmail String
+  guestName  String?
+  rating     Int
+  comment    String?
+  status     FeedbackStatus @default(pending)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  reviewedAt DateTime?
+
+  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@unique([guestEmail, eventId])
+  @@index([artistId, status])
+  @@index([status, createdAt])
+}
+
+/// Shared with Person A (Person A writes; Person B reads).
+model Event {
+  id        String   @id @default(cuid())
+  title     String
+  artForm   String?
+  date      String
+  startTime String?
+  endTime   String?
+  location  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bookings Booking[]
+  payouts  Payout[]
+}
+
+/// Shared with Person A (Person A writes booking state; Person B may assign artist).
+model Booking {
+  id             String        @id @default(cuid())
+  eventId        String
+  artistId       String?
+  guestEmail     String?
+  guestName      String?
+  organization   String?
+  bookingType    String?
+  status         BookingStatus @default(pending)
+  grossAmount    Float         @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  event  Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  artist Artist? @relation(fields: [artistId], references: [id], onDelete: SetNull)
+
+  @@index([artistId])
+  @@index([eventId])
+}
+
+model Payout {
+  id          String       @id @default(cuid())
+  artistId    String
+  eventId     String
+  bookingId   String?
+  grossAmount Float
+  artistShare Float
+  status      PayoutStatus @default(pending)
+  paidAt      DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([artistId, status])
+}
+
+model NotificationLog {
+  id        String   @id @default(cuid())
+  channel   String
+  to        String
+  template  String
+  payload   String
+  status    String
+  error     String?
+  createdAt DateTime @default(now())
+}

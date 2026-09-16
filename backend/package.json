@@ -1,0 +1,50 @@
+{
+  "name": "tvarita-backend-person-b",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Person B backend — artist auth, admin ops, feedback moderation, CSV onboarding",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:seed": "node prisma/seed.js",
+    "db:setup": "prisma generate && prisma db push && node prisma/seed.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --forceExit",
+    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --watch"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.16.1",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "csv-parse": "^6.1.0",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.1.0",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
+    "node-cron": "^4.2.1",
+    "zod": "^4.1.5"
+  },
+  "devDependencies": {
+    "jest": "^30.1.3",
+    "prisma": "^6.16.1",
+    "supertest": "^7.1.4"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "transform": {},
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.js"
+    ]
+  }
+}

@@ -7,6 +7,10 @@ import { ProtectedRoute, RoleGuard } from './components/auth/ProtectedRoute';
 // Public Pages
 import HomePage from './pages/public/HomePage';
 import AskTvaritaPage from './pages/public/AskTvaritaPage';
+import CommunityFeedPage from './pages/public/CommunityFeedPage';
+import CreatePostPage from './pages/public/CreatePostPage';
+import PostDetailPage from './pages/public/PostDetailPage';
+import CommunityModerationPage from './pages/admin/CommunityModerationPage';
 
 // Corporate Pages
 import CorporateExperiencesPage from './pages/corporate/CorporateExperiencesPage';
@@ -33,7 +37,12 @@ export default function App() {
               <Route path="/home" element={<Navigate to="/" replace />} />
               <Route path="/ask-tvarita" element={<AskTvaritaPage />} />
 
-              {/* Corporate User Journey Routes */}
+              {/* Community Routes */}
+              <Route path="/community" element={<CommunityFeedPage />} />
+              <Route path="/community/create" element={<CreatePostPage />} />
+              <Route path="/community/posts/:id" element={<PostDetailPage />} />
+              <Route path="/community/moderation" element={<CommunityModerationPage />} />
+
               <Route path="/corporate/experiences" element={<CorporateExperiencesPage />} />
               <Route path="/corporate/experiences/:id" element={<CorporateExperienceDetailPage />} />
               <Route path="/corporate/signup" element={<CorporateSignupPage />} />

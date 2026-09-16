@@ -103,13 +103,23 @@ export const knowledge = {
 
 /* ─── Community ──────────────────────────────────────────────────── */
 export const community = {
-  follow: (artistId) => apiClient.post('/community/follow', { artistId }),
-  unfollow: (artistId) => apiClient.delete(`/community/follow/${artistId}`),
-  save: (contentId, contentType) => apiClient.post('/community/save', { contentId, contentType }),
-  unsave: (contentId) => apiClient.delete(`/community/save/${contentId}`),
-  notifications: (params) => apiClient.get('/notifications', { params }),
-  markRead: (id) => apiClient.put(`/notifications/${id}/read`),
-  markAllRead: () => apiClient.put('/notifications/read-all'),
+  // Posts
+  listPosts: (params) => apiClient.get('/community/posts', { params }),
+  getPost: (id) => apiClient.get(`/community/posts/${id}`),
+  createPost: (data) => apiClient.post('/community/posts', data),
+  deletePost: (id) => apiClient.delete(`/community/posts/${id}`),
+
+  // Likes
+  toggleLike: (postId) => apiClient.post(`/community/posts/${postId}/like`),
+
+  // Comments
+  addComment: (postId, data) => apiClient.post(`/community/posts/${postId}/comments`, data),
+  deleteComment: (commentId) => apiClient.delete(`/community/comments/${commentId}`),
+
+  // Reports
+  reportPost: (postId, data) => apiClient.post(`/community/posts/${postId}/report`, data),
+  listReports: (params) => apiClient.get('/community/reports', { params }),
+  updateReport: (reportId, data) => apiClient.patch(`/community/reports/${reportId}`, data),
 };
 
 /* ─── Impact ──────────────────────────────────────────────────────── */

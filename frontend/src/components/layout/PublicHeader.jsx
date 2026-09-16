@@ -7,6 +7,7 @@ import { useCart } from '../../context/CartContext';
 const NAV_LINKS = [
   { label: 'Home', to: '/' },
   { label: 'Ask Tvarita', to: '/ask-tvarita' },
+  { label: 'Community', to: '/community' },
   { label: 'About', to: '/about' },
   { label: 'Artists', to: '/artists' },
   { label: 'Art Forms', to: '/art-forms' },
@@ -25,6 +26,7 @@ const NAV_LINKS = [
   { label: 'Gallery', to: '/gallery' },
   { label: 'Contact', to: '/contact' },
 ];
+
 
 function roleDashboard(role) {
   switch (role) {

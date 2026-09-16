@@ -40,7 +40,8 @@ Rules:
 9. state_id for get_events_by_state is the \`id\` from get_states, NOT the state name.
 10. School booking (create_school_booking) uses school_email + art_form + date (YYYY-MM-DD) + headcount (1–5000, ₹50/head). Guest OTP is not required. 404 SCHOOL_NOT_FOUND means the school is not in the admin CSV. Status awaiting_payment means an artist was assigned; no_artist_available_pending_admin means admin will assign — do not invent an artist.
 11. Corporate booking (create_corporate_booking) is the same shape with corporate_email at ₹500/head. 404 CORPORATE_NOT_FOUND means the company is not in the admin CSV.
-12. Keep your responses concise and conversational. Format event details clearly.`,
+12. After a hold or awaiting_payment booking, use create_payment with booking_id, then get_payment_status with payment.id. Status values are pending / succeeded / failed. Do not call a payment webhook. 409 PAYMENT_NOT_ALLOWED means the booking is not in a payable status.
+13. Keep your responses concise and conversational. Format event details clearly.`,
   },
 ];
 

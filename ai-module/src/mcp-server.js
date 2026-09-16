@@ -17,6 +17,7 @@ import { validateConfig } from './config.js';
 import { discoveryTools, handleDiscoveryToolCall } from './tools/discovery.js';
 import { authTools, handleAuthToolCall } from './tools/auth.js';
 import { bookingTools, handleBookingToolCall } from './tools/booking.js';
+import { paymentTools, handlePaymentToolCall } from './tools/payments.js';
 import { logToolCall, logToolResult } from './logger.js';
 import { summarizeMcpResult } from './mcp-result.js';
 
@@ -24,7 +25,7 @@ import { summarizeMcpResult } from './mcp-result.js';
 validateConfig();
 
 // Combine all tools
-const ALL_TOOLS = [...discoveryTools, ...authTools, ...bookingTools];
+const ALL_TOOLS = [...discoveryTools, ...authTools, ...bookingTools, ...paymentTools];
 
 // Initialize the MCP Server
 const server = new Server(
@@ -60,6 +61,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       result = await handleAuthToolCall(name, args);
     } else if (bookingTools.some((t) => t.name === name)) {
       result = await handleBookingToolCall(name, args);
+    } else if (paymentTools.some((t) => t.name === name)) {
+      result = await handlePaymentToolCall(name, args);
     }
   } catch (err) {
     logToolResult(name, {

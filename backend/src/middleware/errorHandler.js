@@ -26,6 +26,12 @@ export function errorHandler(err, _req, res, _next) {
     });
   }
 
+  if (err.code === 'P2034') {
+    return res.status(409).json({
+      error: 'Conflict: concurrent update — please retry',
+    });
+  }
+
   if (err.code === 'LIMIT_FILE_SIZE') {
     return res.status(400).json({ error: 'Uploaded file is too large' });
   }

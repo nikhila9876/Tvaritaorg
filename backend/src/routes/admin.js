@@ -20,6 +20,7 @@ import {
   importCorporatesFromCsv,
   listBookings,
   assignArtistToEvent,
+  assignArtistToPendingBooking,
   listPayouts,
   markPayoutPaid,
 } from '../services/adminService.js';
@@ -130,6 +131,18 @@ router.post(
   validateBody(assignArtistSchema),
   asyncHandler(async (req, res) => {
     const result = await assignArtistToEvent(req.params.event_id, req.body.artist_id);
+    res.json(result);
+  }),
+);
+
+router.post(
+  '/bookings/:booking_id/assign-artist',
+  validateBody(assignArtistSchema),
+  asyncHandler(async (req, res) => {
+    const result = await assignArtistToPendingBooking(
+      req.params.booking_id,
+      req.body.artist_id,
+    );
     res.json(result);
   }),
 );

@@ -184,12 +184,22 @@ export async function assignArtistToEvent(eventId, artistId) {
     throw new AppError('No booking found for this event to assign', 404);
   }
 
+  // Pending-admin / awaiting payment flow — Person A owns payment window + notify
+  if (
+    booking.status === 'no_artist_available_pending_admin' ||
+    booking.status === 'awaiting_payment'
+  ) {
+    const { onManualArtistAssignment } = await import(
+      './personA/paymentService.js'
+    );
+    return onManualArtistAssignment(booking.id, artistId);
+  }
+
   const updated = await prisma.booking.update({
     where: { id: booking.id },
     data: { artistId, status: 'confirmed' },
   });
 
-  // Ensure a pending payout row exists for this assignment.
   const existingPayout = await prisma.payout.findFirst({
     where: { artistId, eventId },
   });
@@ -212,6 +222,17 @@ export async function assignArtistToEvent(eventId, artistId) {
     artist_id: artistId,
     status: updated.status,
   };
+}
+
+/**
+ * Assign artist to a pending-admin booking that has no Event yet (Person A path).
+ * Mounted for admin use; opens 48h payment window.
+ */
+export async function assignArtistToPendingBooking(bookingId, artistId) {
+  const { onManualArtistAssignment } = await import(
+    './personA/paymentService.js'
+  );
+  return onManualArtistAssignment(bookingId, artistId);
 }
 
 export async function listPayouts() {

@@ -56,6 +56,7 @@ describe('bookingTools', () => {
     const errContent = JSON.parse(result.content[0].text);
     expect(errContent.error).toContain('not authenticated');
     expect(errContent.requires_auth).toBe(true);
+    expect(errContent.code).toBe('NOT_AUTHENTICATED');
   });
 
   test('create_individual_booking sends correct payload when authenticated', async () => {
@@ -106,10 +107,39 @@ describe('bookingTools', () => {
     const errContent = JSON.parse(result.content[0].text);
     expect(errContent.error).toBe('Slot is already locked or unavailable');
     expect(errContent.status).toBe(409);
+    expect(errContent.code).toBe('SLOT_UNAVAILABLE');
   });
 
   test('returns null for unknown tools', async () => {
     const result = await handleBookingToolCall('unknown', {});
     expect(result).toBeNull();
+  });
+
+  test('rejects headcount of 0 or negative before hitting the API', async () => {
+    sessionStore.setSession(DEFAULT_CONVERSATION_ID, 'mock-jwt', 'guest@example.com');
+
+    for (const headcount of [0, -1, 99, 1.5]) {
+      const result = await handleBookingToolCall('create_individual_booking', {
+        artist_id: 'art_1',
+        slot_id: 'slot_1',
+        headcount,
+      });
+      expect(result.isError).toBe(true);
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.code).toBe('VALIDATION_ERROR');
+      expect(parsed.details.some((d) => d.field === 'headcount')).toBe(true);
+    }
+
+    expect(apiPost).not.toHaveBeenCalled();
+  });
+
+  test('rejects missing artist_id / slot_id before hitting the API', async () => {
+    const result = await handleBookingToolCall('create_individual_booking', {
+      headcount: 2,
+    });
+    expect(result.isError).toBe(true);
+    expect(apiPost).not.toHaveBeenCalled();
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.code).toBe('VALIDATION_ERROR');
   });
 });

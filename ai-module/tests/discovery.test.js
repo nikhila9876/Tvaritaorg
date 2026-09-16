@@ -63,4 +63,11 @@ describe('discoveryTools', () => {
     const result = await handleDiscoveryToolCall('unknown_tool', {});
     expect(result).toBeNull();
   });
+
+  test('get_events_by_state requires state_id', async () => {
+    const result = await handleDiscoveryToolCall('get_events_by_state', {});
+    expect(result.isError).toBe(true);
+    expect(apiGet).not.toHaveBeenCalled();
+    expect(JSON.parse(result.content[0].text).code).toBe('VALIDATION_ERROR');
+  });
 });

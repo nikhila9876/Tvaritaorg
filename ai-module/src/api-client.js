@@ -49,15 +49,30 @@ export async function apiRequest(method, path, { body, authToken } = {}) {
     fetchOptions.body = JSON.stringify(body);
   }
 
+  const controller = new AbortController();
+  const timeoutMs = config.backendTimeoutMs || 15000;
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  fetchOptions.signal = controller.signal;
+
   let response;
   try {
     response = await fetch(url, fetchOptions);
   } catch (err) {
+    if (err?.name === 'AbortError') {
+      throw {
+        error: `Backend request timed out after ${timeoutMs}ms`,
+        status: 0,
+        code: 'TIMEOUT',
+      };
+    }
     // Network-level error (backend unreachable, DNS failure, etc.)
     throw {
       error: `Backend unreachable: ${err.message}`,
       status: 0,
+      code: 'BACKEND_UNREACHABLE',
     };
+  } finally {
+    clearTimeout(timer);
   }
 
   // Parse response body (may be empty on 204, etc.)
@@ -74,13 +89,16 @@ export async function apiRequest(method, path, { body, authToken } = {}) {
   }
 
   if (!response.ok) {
+    const objectBody = responseBody && typeof responseBody === 'object' ? responseBody : null;
     throw {
       error:
-        (responseBody && typeof responseBody === 'object' && responseBody.message) ||
-        (responseBody && typeof responseBody === 'object' && responseBody.error) ||
+        (objectBody && objectBody.message) ||
+        (objectBody && objectBody.error) ||
         `Backend returned HTTP ${response.status}`,
       status: response.status,
       body: responseBody,
+      details: objectBody?.details,
+      code: response.status === 409 ? 'SLOT_UNAVAILABLE' : undefined,
     };
   }
 

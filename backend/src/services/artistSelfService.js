@@ -78,6 +78,20 @@ export async function getMyTimeslots(artistId) {
   return slots.map(formatSlot);
 }
 
+/**
+ * Public guest discovery: available slots only (same item shape as /artist/me/timeslots).
+ */
+export async function getPublicArtistTimeslots(artistId) {
+  const artist = await prisma.artist.findUnique({ where: { id: artistId } });
+  if (!artist) throw new AppError('Artist not found', 404);
+
+  const slots = await prisma.timeSlot.findMany({
+    where: { artistId, available: true },
+    orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
+  });
+  return slots.map(formatSlot);
+}
+
 export async function putMyTimeslots(artistId, timeslots) {
   for (const slot of timeslots) {
     if (slot.end_time <= slot.start_time) {

@@ -6,6 +6,7 @@ import {
   createFeedback,
   listApprovedFeedbackForArtist,
 } from '../services/feedbackService.js';
+import { getPublicArtistTimeslots } from '../services/artistSelfService.js';
 
 const router = Router();
 
@@ -19,6 +20,13 @@ router.post(
 );
 
 export const publicArtistFeedbackRouter = Router();
+
+publicArtistFeedbackRouter.get(
+  '/:artist_id/timeslots',
+  asyncHandler(async (req, res) => {
+    res.json({ timeslots: await getPublicArtistTimeslots(req.params.artist_id) });
+  }),
+);
 
 publicArtistFeedbackRouter.get(
   '/:artist_id/feedback',
